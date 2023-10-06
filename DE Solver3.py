@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 # Inputs
 
 # How accurate, for now accuracy will just be the number of orthogonal polynomials, later we will create more accuracy by adding greater precision
-N = 10
+N = 5
 
 # coefficients in the linear DE, NOTE: The 0th index represents coefficient of y, the nth index represents the nth derivative of y.
 a = [0,-1,0,1]
@@ -119,7 +119,7 @@ for i in range(o):
 
 	M.append(R)
 
-DX = (X[1]-X[0])/(N-o+1)
+DX = (X[-1]-X[0])/(N-o+1)
 x = [DX*(i+1) for i in range(N-o)]
 
 for i in range(N-o):
@@ -154,7 +154,7 @@ def af(x,a,C,N):
 
 	return S
 
-
+print(a)
 
 # Exact Plot 
 
@@ -164,7 +164,7 @@ def ef(x):
 
 
 points = 100
-dx = (math.pi/2)/points
+dx = (X[-1]-X[0])/points
 xlist = [dx*i for i in range(points+1)]
 ylist = [ef(x) for x in xlist]
 plt.plot(xlist,ylist, "-r")

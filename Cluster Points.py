@@ -16,7 +16,7 @@ eylist = [ef(x) for x in xlist]
 plt.plot(xlist,eylist,"-r")
 
 
-N = 10
+N = 3
 
 # Our Matrix in Mx=B where
 M = []
@@ -29,7 +29,8 @@ for i in range(N-1):
 
 M.append(R)
 
-x = [1/(j**2+10) for j in range(N-1)]
+x = [-0.3668341708542714,0.44723618090452266]
+
 
 for i in range(N-1):
 
@@ -44,7 +45,7 @@ B = np.array(B)
 
 a = np.linalg.solve(M,B)
 
-
+print(a)
 def af(x,a):
 
 	S = 0
@@ -54,9 +55,12 @@ def af(x,a):
 
 	return S
 
-print(a)
-aylist = [af(x,a) for x in xlist]
 
-plt.plot(xlist,aylist,"-g")
+a1ylist = [af(x,a) for x in xlist]
+
+
+#plt.plot(xlist,a1ylist,"-g")
+plt.plot(xlist,a1ylist,"-b")
+
 
 plt.show()
