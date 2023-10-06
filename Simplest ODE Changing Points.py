@@ -23,7 +23,7 @@ def af(x,a):
 # We will start this off like a plot but really we will be using these points to form an approximation for the integral of y_N-e^x
 
 points = 100
-dx = (2/(points-1))*2/100
+dx = (2/(points-1))
 xlist = [-1+i*dx for i in range(points)]
 eylist = [ef(x) for x in xlist]
 
