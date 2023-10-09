@@ -81,6 +81,14 @@ def polysmult(p1, a):
 
 	return p1
 
+def polyip(p1,p2,W="L"):
+
+	if W == "L":
+
+		p0 = polyint(polymult(p1,p2))
+		
+		return polyeval(p0,1)-polyeval(p0,-1)
+
 
 # Chebyshev Polynomials Generator
 def ChebyshevGen(N):
@@ -144,30 +152,59 @@ def lagpoly(x, i):
 
 	return polysmult(p1, 1/P)
 
+def legpoly(N):
+
+	# This will generate the first N normalised legendre polynomials N > 2
+	P = [[1/math.sqrt(2)]]
+
+	# We'll be doing this by Gram Schmidt
+	for n in range(1,N):
+
+		# Stage 1 
+		p1 = [0]*(n)
+		p1.append(1)
+
+
+		# Stage 2 Creating our orthogonal polynomial
+		p3 = p1
+		for j in range(n):
+
+			p2 = P[j].copy()
+			p2 = polysmult(p2,-polyip(p2,p3))
+			p1 = polyadd(p1,p2)
+
+
+		# Stage 3 Normalising our polynomial
+		P.append( polysmult(p1,1/math.sqrt(polyip(p1,p1))) )
+
+	return P
+
+
 def gaussint(f,a,b, N=10, nodes="C"):
 
 	# This function will approximate the integral between a and b of f(x) using Gaussian Integration
 
 
 	### N is the number of nodes
-	### Later we will use other nodes for now only Chebyshev
 
 	if nodes == "C":
+		# Chebyshev
 
-
+		# NOTE Chebyshev GI Weights are always pi/n
 		CN = ChebyshevNodes(N)
+
+		# We need to translate the CN first. 
 		S = 0
 
 		for i in range(N):
-			p = polyint(lagpoly(CN,i))
-			w = polyeval(p,b)-polyeval(p,a)
-			S += f(CN[i])*w	
 
-		return S
+			S += f((b-a)/2*CN[i]+(b+a)/2)*math.sqrt(1-CN[i]**2)
 
+		return (b-a)/2*math.pi/N*S
+	elif nodes == "L":
+		# Lobatto
+		LN = legpoly(N)
 	else:
 		return 0
 
-
-
-print(gaussint(math.exp,0,1,N=10))
+print(legpoly(5))
