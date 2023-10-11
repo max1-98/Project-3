@@ -5,6 +5,15 @@ import numpy
 
 ###*** Below are all of the polynomial functions we will need ***###
 
+def bexp(a,n):
+	# Expands (a+x)^n and leaves it as a polynomial
+
+	p = []
+
+	for i in range(n+1):
+		p.append(a**(n-i)*math.factorial(n)/(math.factorial(n-i)*math.factorial(i)))
+
+	return p
 
 # This function adds two polynomials
 def polyadd(p1,p2):
@@ -35,6 +44,13 @@ def polydiff(F):
 		f[i] = (i+1)*F[i+1]
 
 	return f
+
+def polydiffn(F,n):
+
+	for i in range(n):
+		F = polydiff(F)
+
+	return F
 
 # Polynomial evaluator 
 def polyeval(a,x):
@@ -89,6 +105,46 @@ def polyip(p1,p2,W="L"):
 		
 		return polyeval(p0,1)-polyeval(p0,-1)
 
+# Transformations
+def polyxstret(p,a):
+	# Computes the calculation p(x) -> p(x/a)
+	o = len(p)
+
+	for i in range(o):
+		p[i] = p[i]/a**i
+
+	return p
+
+def polyystret(p,a):
+	# Computes the calculation p(x) -> ap(x)
+	o = len(p)
+
+	for i in range(o):
+		p[i] = a*p[i]
+
+	return p
+
+def polyxtrans(p,a):
+	# p(x) -> p(x-a)
+	o = len(p)
+
+	p1 = []
+
+	for i in range(o):
+		p2 = bexp(-a,i)
+		p2 = polysmult(p2,p[i])
+		p1 = polyadd(p1,p2)
+	
+	return p1
+
+def polyytrans(p,a):
+	# p(x) -> p(x) + a
+
+	p[0] += a
+
+	return p
+
+# Orthogonal Polymials 
 
 # Chebyshev Polynomials Generator
 def ChebyshevGen(N):
@@ -207,4 +263,4 @@ def gaussint(f,a,b, N=10, nodes="C"):
 	else:
 		return 0
 
-print(legpoly(5))
+
