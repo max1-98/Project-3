@@ -7,22 +7,25 @@ from main import *
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+from mpmath import *
+
+
 
 ### Inputs from the User
 
 # Accuracy (number of Orthogonal Polys)
-N = 3
+N = 10
 
 # Coefficients of the terms in the ODE "Coeffunctions"
 # From y, dy/dx, d^2y/dx^2...
 def g0(x):
-	return 1
+	return (4)
 
 def g1(x):
-	return 1 
+	return -(x)
 
 def g2(x):
-	return 0
+	return (1-x**2)
 
 def g3(x):
 
@@ -39,8 +42,11 @@ def f(x):
 X = [0]
 Y = [1]
 
+X1 = [0]
+DY = [0]
+
 # The solutions domain [a,b]
-D = [-1,1]
+D = [-0.99,0.99]
 
 
 # Our plan:
@@ -54,7 +60,7 @@ D = [-1,1]
 # Solve this via GJ
 
 # Our coefficients
-coeffun = [g0,g1]
+coeffun = [g0,g1,g2]
 
 # Order of the ODE
 n = len(coeffun)-1
@@ -93,7 +99,9 @@ M = []
 B = []
 
 # We'll start with the Initial Conditions
-for i in range(n):
+
+# Coordinates
+for i in range(len(X)):
 
 	R=[]
 
@@ -101,6 +109,25 @@ for i in range(n):
 
 		R.append(polyeval(polys[j],X[i]))
 	B.append(Y[i])
+	M.append(R)
+
+
+# Derivatives
+for i in range(len(X1)):
+
+	R = []
+	polysd1 = polys.copy()
+	polysd = []
+
+	for poly in polysd1:
+		polysd.append(polydiff(poly))
+
+	for j in range(N):
+		R.append(polyeval(polysd[j],X1[i]))
+
+
+	B.append(DY[i])
+
 	M.append(R)
 
 
@@ -141,26 +168,41 @@ for i in range(N-n):
 M = np.array(M)
 B = np.array(B)
 
-a = np.linalg.solve(M,B)
+A = np.linalg.solve(M,B)
 
 
 solution = []
 for i in range(N):
-	solution = polyadd(solution,polysmult(polys[i],a[i]))
+	solution = polyadd(solution,polysmult(polys[i],A[i]))
 
+points = 100
+dx = (b-a)/(points-1)
 
+xlist = [a+i*dx for i in range(points)]
+
+"""
+# Solution to dy/dx=y y(0)=1
 def ef(x):
 
 	return math.e**(-x)
 
-
-points = 100
-dx = (b-a)/(points-1)
-xlist = [a+i*dx for i in range(points)]
 eylist = [ef(x) for x in xlist]
+
+"""
+
+
+
+
 aylist = [polyeval(solution,x) for x in xlist]
 
 
+def j(x,M=100):
+
+	
+
+	return -2*x**2+1
+
+eylist = [j(x) for x in xlist]
 
 plt.plot(xlist,eylist,"-r")
 plt.plot(xlist,aylist,"-g")
