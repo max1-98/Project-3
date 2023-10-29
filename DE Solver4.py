@@ -14,12 +14,12 @@ from mpmath import *
 ### Inputs from the User
 
 # Accuracy (number of Orthogonal Polys)
-N = 10
+N = 50
 
 # Coefficients of the terms in the ODE "Coeffunctions"
 # From y, dy/dx, d^2y/dx^2...
 def g0(x):
-	return (4)
+	return (1/25)
 
 def g1(x):
 	return -(x)
@@ -39,11 +39,11 @@ def f(x):
 
 # Initial Conditions
 
-X = [0]
-Y = [1]
+X = [0,1/2]
+Y = [1,2]
 
-X1 = [0]
-DY = [0]
+X1 = []
+DY = []
 
 # The solutions domain [a,b]
 D = [-0.99,0.99]
@@ -195,7 +195,7 @@ eylist = [ef(x) for x in xlist]
 
 aylist = [polyeval(solution,x) for x in xlist]
 
-
+"""
 def j(x,M=100):
 
 	
@@ -205,5 +205,6 @@ def j(x,M=100):
 eylist = [j(x) for x in xlist]
 
 plt.plot(xlist,eylist,"-r")
+"""
 plt.plot(xlist,aylist,"-g")
 plt.show()

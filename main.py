@@ -264,3 +264,137 @@ def gaussint(f,a,b, N=10, nodes="C"):
 		return 0
 
 
+# Here we create our Non-Linear Representations along with their Operations so we can generate our system of equations
+# from an ODE. We'll also introduce a Jacobian Function
+# See my Notes for how each of these operators is meant to work mathematically
+
+def dim(x):
+
+	z = x.copy()
+	n = 0
+	while not isinstance(z, int) and not isinstance(z,int):
+		z = z[-1]
+		n += 1
+
+
+	return n
+def add(x,y):
+	n = len(x)
+	m = len(y)
+
+	if n > m:
+		m = n
+
+	for i in range(m):
+
+		# Then we just term wise add
+
+		for j in range(len(x[i])):
+
+			if len(x[i]) != len(y[i]):
+				return "Size-Error"
+			if i < 2:
+				x[i][j] = x[i][j] + y[i][j]
+			elif i < 3:
+				for k in range(len(x[i])):
+					x[i][j][k] = x[i][j][k] + y[i][j][k]
+
+	return x
+
+def smult(x,s):
+
+	n = len(x)
+
+	for i in range(n):
+
+		# Then we just term wise add
+
+		for j in range(len(x[i])):
+
+			if i < 2:
+				x[i][j] = s*x[i][j]
+			elif i < 3:
+				for k in range(len(x[i])):
+					x[i][j][k] = s*x[i][j][k]
+	return x
+
+
+def mult(x,s):
+	n = dim(x)
+
+	if n == 1:
+		for i in range(len(x)):
+			x[i] = x[i]*s
+	elif n == 2:
+		for i in range(len(x)):
+			for j in range(len(x)):
+				x[i][j] = x[i][j]*s
+
+	return x
+
+def mcross(x,y):
+	# This is that product rule described in my Notes except just for when they are singular ones.
+	# i and j are the sizes of x and y respectively
+
+	# First we need to determine the size of x and y
+	n = dim(x)
+	k = dim(y)
+
+	for i in range(n+k):
+		m = [0]*len(y)
+		for j in range(i):
+			M = []
+			for k in range(len(y)):
+				M.append(m.copy())
+
+			m = M.copy()
+	if k+n == 0:
+		return [x[0]*y[0]]
+
+	if k+n == 1:
+		if n > k:
+			print(x)
+			print(y)
+			return mult(x,y[0])
+		else:
+			return mult(y,x[0])
+
+	if k+n == 2:
+		for i in range(len(x)):
+			for j in range(len(x)):
+				m[i][j] = x[i]*y[j]
+
+	return m
+
+
+def cross(x,y):
+	# Our hardest function. This will deal with multiplying full representations of what we saw out
+
+	# Our new size
+	n = len(x)+len(y)-2
+
+
+	# So here we initialize our result. We create it as just zeros. 
+
+	z = [[0]]
+	for i in range(n):
+		m = [0]*n
+		for j in range(i):
+			M = []
+			for k in range(n):
+				M.append(m.copy())
+
+			m = M.copy()
+		z.append(m.copy())
+
+	for xs in x:
+		for ys in y:
+			xs2 = xs.copy()
+			ys2 = ys.copy()
+			z = add(mcross(xs2,ys2),z)
+
+	return z 
+
+print(cross([[0],[0,1],[[1,1],[1,1]]],[[0],[0,1],[[1,1],[1,1]]]))
+
+
