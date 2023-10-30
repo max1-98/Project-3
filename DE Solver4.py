@@ -7,23 +7,29 @@ from main import *
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+import mpmath
 from mpmath import *
 
+mpmath.mp.dps = 100
+mpmath.mp.prec = 100
 
 
 ### Inputs from the User
 
 # Accuracy (number of Orthogonal Polys)
-N = 50
+N = 20
 
 # Coefficients of the terms in the ODE "Coeffunctions"
 # From y, dy/dx, d^2y/dx^2...
+z = [mpf('1.0'), mpf('-7.5964541966078389979785938156496e-65'), mpf('0.5'), mpf('6.343839899453709649337223491084e-34'), mpf('-1.3184491312894828952604967780596e-32'), mpf('-2.2262841024800207473019877057249e-32'), mpf('1.4441277150173815430340824006955e-31'), mpf('2.6311439424014895920469823713884e-31'), mpf('-7.7377855768554919190097963986379e-31'), mpf('-1.4787079897576693696382051402784e-30'), mpf('2.2796588964003716362906393884204e-30'), mpf('4.5240751362014822131501800383165e-30'), mpf('-3.8783095199612239091355305752283e-30'), mpf('-7.957031190709998956810081033472e-30'), mpf('3.8015281196433160340327112903093e-30'), mpf('8.0363161052596793013838729633121e-30'), mpf('-1.9955092714426741638710618253969e-30'), mpf('-4.3316969961217474361602260341421e-30'), mpf('4.3475942422129448953908708629608e-31'), mpf('9.6563660226763096263384428635804e-31')]
+
+
+
 def g0(x):
-	return (1/25)
+	return polyeval(polydiff(z),x)
 
 def g1(x):
-	return -(x)
-
+	return polyeval(z,x)
 def g2(x):
 	return (1-x**2)
 
@@ -35,18 +41,18 @@ def g3(x):
 # What our ODE equals
 def f(x):
 
-	return 0
+	return polyeval(z,x)*polyeval(polydiff(z),x)+x
 
 # Initial Conditions
 
-X = [0,1/2]
-Y = [1,2]
+X = [0]
+Y = [1]
 
 X1 = []
 DY = []
 
 # The solutions domain [a,b]
-D = [-0.99,0.99]
+D = [-1,1]
 
 
 # Our plan:
@@ -60,7 +66,7 @@ D = [-0.99,0.99]
 # Solve this via GJ
 
 # Our coefficients
-coeffun = [g0,g1,g2]
+coeffun = [g0,g1]
 
 # Order of the ODE
 n = len(coeffun)-1
@@ -165,10 +171,10 @@ for i in range(N-n):
 	B.append(f(x))
 
 
-M = np.array(M)
-B = np.array(B)
-
-A = np.linalg.solve(M,B)
+# Change this to solve using mpf 
+M = mpmath.matrix(M)
+B = mpmath.matrix(B)
+A = mpmath.lu_solve(M,B)
 
 
 solution = []
@@ -191,7 +197,17 @@ eylist = [ef(x) for x in xlist]
 """
 
 
+def ef(x):
+	return math.sqrt(1+x**2)
 
+eylist = [ef(x) for x in xlist]
+plt.plot(xlist,eylist,"-r")
+
+def nf(x):
+	return 1+0.4797*x**2-0.06334*x**4
+
+nylist = [nf(x) for x in xlist]
+plt.plot(xlist,nylist,"-b")
 
 aylist = [polyeval(solution,x) for x in xlist]
 
@@ -208,3 +224,7 @@ plt.plot(xlist,eylist,"-r")
 """
 plt.plot(xlist,aylist,"-g")
 plt.show()
+print(solution)
+# p1 = [0.0, 1.850815717680926, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+# p2 = [3.944304526105059e-31, 1.0000000000000009, -6.918772340517001e-14, 24.389568917486372, 4.2771433271321947e-13, -167.31904436954835, -7.22007280590506e-13, 294.23019433219423, 3.478214081967499e-13, -144.09649689397693]
+# p3 = [0.0, 1.0, -2.4067833853528176e-13, -77.22848071406378, 1.353899045419129e-12, 539.065483032338, -2.3203773526874835e-12, -1063.0477066692667, 1.178724417193309e-12, 627.2597267024689]

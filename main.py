@@ -2,6 +2,7 @@
 
 import math
 import numpy
+import mpmath
 
 ###*** Below are all of the polynomial functions we will need ***###
 
@@ -182,7 +183,7 @@ def ChebyshevNodes(N):
 
 	CN = []
 	for i in range(N):
-		CN.append(math.cos((math.pi+2*math.pi*i)/(2*N)))
+		CN.append(mpmath.cos(((1+2*i)*mpmath.pi)/(2*N)))
 
 	return CN
 
@@ -278,6 +279,7 @@ def dim(x):
 
 
 	return n
+
 def add(x,y):
 	n = len(x)
 	m = len(y)
@@ -395,6 +397,6 @@ def cross(x,y):
 
 	return z 
 
-print(cross([[0],[0,1],[[1,1],[1,1]]],[[0],[0,1],[[1,1],[1,1]]]))
+#print(cross([[0],[0,1],[[1,1],[1,1]]],[[0],[0,1],[[1,1],[1,1]]]))
 
 
