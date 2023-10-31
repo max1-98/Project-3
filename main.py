@@ -3,6 +3,8 @@
 import math
 import numpy
 import mpmath
+mpmath.mp.dps = 100
+mpmath.mp.prec = 100
 
 ###*** Below are all of the polynomial functions we will need ***###
 
@@ -400,3 +402,13 @@ def cross(x,y):
 #print(cross([[0],[0,1],[[1,1],[1,1]]],[[0],[0,1],[[1,1],[1,1]]]))
 
 
+def integrate(f,a,b,N=1000):
+
+	dx = (b-a)/N
+	S = f(a)+f(b)
+
+	for i in range(1,N):
+		S += 2*f(a+i*dx)
+
+
+	return 1/2*dx*S
