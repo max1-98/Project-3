@@ -44,7 +44,7 @@ def f(x):
 
 	return np.array([[x[0]-1], [2*(x[1])**2+4*(x[2])**2+2*x[0]*x[1]+4*x[0]*x[2]+6*x[1]*x[2]-1], [1/4*x[1]**2+1/32*x[2]**2+x[0]*x[1]+1/2*x[0]*x[2]+3/16*x[1]*x[2]-1/2]])
 
-for i in range(N):
+for i in range(6):
 
 	x = [y[0,0],y[1,0],y[2,0]]
 	J = np.zeros((3,3))
@@ -57,7 +57,5 @@ for i in range(N):
 	J[2,1] = x[0] + 1/2*x[1] + 3/16*x[2]
 	J[2,2] = 1/2*x[0] + 3/16*x[1] + 1/16*x[2]
 	JI = np.linalg.inv(J)
-	print(x,f(x), i)
-	print(f(x))
+	print(y,i)
 	y = y - JI.dot(f(x))
-
