@@ -9,6 +9,74 @@ import matplotlib.pyplot as plt
 mpmath.mp.dps = 100
 mpmath.mp.prec = 100
 
+def points(m,a,b,basis="c"):
+	# Collocation Points - Chebyshev
+	if basis == "c":
+		# Chebyshev
+
+		points1 = ChebyshevNodes(m)
+
+		# Transformed Points
+		points2 = []
+
+		for point in points1:
+			points2.append((point*(b-a)/2+(b+a)/2))
+	elif basis == "ec":
+		# Even Chebyshev
+
+		points1 = ChebyshevNodes(2*m)
+
+		# Transformed Points
+		points2 = []
+
+		for point in points1:
+			if point > 0:
+				points2.append((point*(b-a)/2+(b+a)/2))
+
+	return points2
+
+def polygen(m,a,b,basis="c"):
+
+	if basis =="c":
+		# Chebyshev
+
+		polysNT = ChebyshevGen(m)
+
+			#Creating Our Translated Versions
+		polys = []
+		for i in range(m):
+			p1 = polysNT[i]
+			p1 = polyxstret(p1,(b-a)/2)
+			p1 = polyxtrans(p1,(b+a)/2)
+				
+			polys.append(p1)
+	elif basis == "ec":
+		# Even Chebyshev
+		polysNTOE = ChebyshevGen(2*m)
+
+		# Now we remove all the odd ones
+		i = 0
+		polysNT = []
+		for poly in polysNTOE:
+
+			if i % 2 == 0:
+				polysNT.append(poly)
+
+			i += 1
+
+
+		#Creating Our Translated Versions
+		polys = []
+		for i in range(m):
+			p1 = polysNT[i]
+			p1 = polyxstret(p1,(b-a)/2)
+			p1 = polyxtrans(p1,(b+a)/2)
+				
+			polys.append(p1)
+
+	return polys
+
+
 def DESolver(g,f,D,XY=[],DXDY=[], basis="c", N=20):
 
 	# g = [g0,g1,g2,g3...]
@@ -20,36 +88,29 @@ def DESolver(g,f,D,XY=[],DXDY=[], basis="c", N=20):
 
 	# Order of the ODE
 	n = len(g)-1
+	a = D[0]
+	b = D[1]
 
 	# We start off by creating the Collocation points. 
 	if basis == "c":
-		# Collocation Points - Chebyshev
-		points1 = ChebyshevNodes(N-n)
-		a = D[0]
-		b = D[1]
+		# Chebyshev 
+		points2 = points(N-n,a,b,"c")
+		polys = polygen(N,a,b,"c")
+		
+	elif basis == "ec":
+		# Even Chebyshev
+		points2 = points(N-n,a,b,"ec")
+		print(points2)
+		polys = polygen(N,a,b,"ec")
+		print(polys)
 
-		# Transformed Points
-		points2 = []
 
-		for point in points1:
-			points2.append((point*(b-a)/2+(b+a)/2))
-
-		# Original Chebyshev Polynomials
-		polysNT = ChebyshevGen(N)
-
-		#Creating Our Translated Versions
-		polys = []
-		for i in range(N):
-			p1 = polysNT[i]
-			p1 = polyxstret(p1,(b-a)/2)
-			p1 = polyxtrans(p1,(b+a)/2)
-			
-			polys.append(p1)
 
 	# So polys are our transformed Chebyshev Polynomials
 
 	### Next let's create the N equations
 
+	# This works so long as it's not a trigonometric polynomial basis
 	if basis != "t":
 		# Mx=B where x is the vector representing our coefficients a0,a1,a2...
 		M = []
@@ -136,31 +197,30 @@ def DESolver(g,f,D,XY=[],DXDY=[], basis="c", N=20):
 	return solution
 
 
-z = [mpf('-1.9446922743316067834825200168063e-62'), mpf('1.0'), mpf('-1.1739941671472299541508282885502e-30'), mpf('0.16691917482546069408301936969609'), mpf('-5.6584563617978052583906368581801e-29'), mpf('0.063972357794579552221197268497175'), mpf('1.0777456002327497351730488701764e-27'), mpf('0.2097373562230419938187855819954'), mpf('-7.9727737797990398340953597390266e-27'), mpf('-1.166908413765676939635859686587'), mpf('3.0235500782929361651708334096413e-26'), mpf('4.8369087620907615600665356528924'), mpf('-6.4423398376595195003165747179841e-26'), mpf('-11.306030908666381886967983165895'), mpf('7.8168056790060963502029830562517e-26'), mpf('15.553063360958604696794166007165'), mpf('-5.0528648615337027692563689553751e-26'), mpf('-11.562593179920282103494633395628'), mpf('1.3525685691207954964604042024982e-26'), mpf('3.6578645623387100944863035925434')]
-
-
+z = [mpf('1.0'), mpf('0.0'), mpf('0.49999999999999999900863376932315'), mpf('0.0'), mpf('-0.12499999999999964162110761058566'), mpf('0.0'), mpf('0.062499999999971190153811881013597'), mpf('0.0'), mpf('-0.031249999998963480631219292746278'), mpf('0.0'), mpf('0.015624999978922638322370276372909'), mpf('0.0'), mpf('-0.0078124997267616825809087939781773'), mpf('0.0'), mpf('0.0039062475707294674989700189517534'), mpf('0.0'), mpf('-0.0019531094562936475527404081076312'), mpf('0.0'), mpf('0.00097648849599602535579593078509154'), mpf('0.0'), mpf('-0.00048801282507110525479452705899763'), mpf('0.0'), mpf('0.00024338633196584852509425904915495'), mpf('0.0'), mpf('-0.00012040871337425147468416429225482'), mpf('0.0'), mpf('0.000058142359188253027723163233567748'), mpf('0.0'), mpf('-0.000026514302695524346876603697214962'), mpf('0.0'), mpf('0.000010832853251309743207544779043098'), mpf('0.0'), mpf('-0.0000036922491001606837038059953517545'), mpf('0.0'), mpf('0.0000009562264724059215301192160864378'), mpf('0.0'), mpf('-0.00000016350280470190300817067341614658'), mpf('0.0'), mpf('0.000000013625233725158573081076786296374'), mpf('0.0')]
 def g0(x):
-	return -mpmath.sin(polyeval(z,x))*polyeval(polydiff(z),x)
+	return polyeval(polydiff(z),mpf(x))
 
 def g1(x):
-	return mpmath.cos(polyeval(z,x))
-
-
+	return polyeval(z,mpf(x))
 
 
 # What our ODE equals
 def f(x):
 
-	return 1-mpmath.sin(polyeval(z,x))*polyeval(polydiff(z),x)*polyeval(z,x)
-D = [-0.9,0.9]
+	return mpf(x)+polyeval(z,mpf(x))*polyeval(polydiff(z),mpf(x))
+
+
+D = [-1,1]
 g = [g0,g1]
-solution = DESolver(g,f,D=D,XY=[[0],[0]])
+solution = DESolver(g,f,D=D,XY=[[0],[1]],basis="ec",N=3)
+
 points = 100
 dx = (D[1]-D[0])/(points-1)
 
 xlist = [D[0]+i*dx for i in range(points)]
 def ef(x):
-	return math.asin(x)
+	return math.sqrt(1+x**2)
 
 eylist = [ef(x) for x in xlist]
 plt.plot(xlist,eylist,"-r")
@@ -170,3 +230,6 @@ plt.plot(xlist,eylist,"-r")
 aylist = [polyeval(solution,x) for x in xlist]
 plt.plot(xlist,aylist,"-g")
 plt.show()
+
+
+# We can call the above function and it will plot our ODE 
