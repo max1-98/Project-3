@@ -67,7 +67,6 @@ def Jacobian(a,x,b):
 
 
 
-
 for i in range(N):
 
 	a = matrix(a)
@@ -79,6 +78,10 @@ for i in range(N):
 	a = mpmath.lu_solve(J,c)
 
 print(a)
+solution = [0]
+for i in range(3):
+	solution = polyadd(solution,polysmult(b[i],a[i]))
+print(solution)
 
 
 

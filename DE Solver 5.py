@@ -5,6 +5,11 @@ import mpmath
 from mpmath import *
 import math
 import matplotlib.pyplot as plt
+import latex
+
+plt.xlabel(r"$x$")
+plt.ylabel(r"$y$")
+plt.grid()
 
 mpmath.mp.dps = 100
 mpmath.mp.prec = 100
@@ -100,9 +105,9 @@ def DESolver(g,f,D,XY=[],DXDY=[], basis="c", N=20):
 	elif basis == "ec":
 		# Even Chebyshev
 		points2 = points(N-n,a,b,"ec")
-		print(points2)
 		polys = polygen(N,a,b,"ec")
-		print(polys)
+
+
 
 
 
@@ -197,38 +202,64 @@ def DESolver(g,f,D,XY=[],DXDY=[], basis="c", N=20):
 	return solution
 
 
-z = [mpf('1.0'), mpf('0.0'), mpf('0.49999999999999999900863376932315'), mpf('0.0'), mpf('-0.12499999999999964162110761058566'), mpf('0.0'), mpf('0.062499999999971190153811881013597'), mpf('0.0'), mpf('-0.031249999998963480631219292746278'), mpf('0.0'), mpf('0.015624999978922638322370276372909'), mpf('0.0'), mpf('-0.0078124997267616825809087939781773'), mpf('0.0'), mpf('0.0039062475707294674989700189517534'), mpf('0.0'), mpf('-0.0019531094562936475527404081076312'), mpf('0.0'), mpf('0.00097648849599602535579593078509154'), mpf('0.0'), mpf('-0.00048801282507110525479452705899763'), mpf('0.0'), mpf('0.00024338633196584852509425904915495'), mpf('0.0'), mpf('-0.00012040871337425147468416429225482'), mpf('0.0'), mpf('0.000058142359188253027723163233567748'), mpf('0.0'), mpf('-0.000026514302695524346876603697214962'), mpf('0.0'), mpf('0.000010832853251309743207544779043098'), mpf('0.0'), mpf('-0.0000036922491001606837038059953517545'), mpf('0.0'), mpf('0.0000009562264724059215301192160864378'), mpf('0.0'), mpf('-0.00000016350280470190300817067341614658'), mpf('0.0'), mpf('0.000000013625233725158573081076786296374'), mpf('0.0')]
+z = [mpf('1.0'), mpf('1.0746689089680776060052356919624e-31'), mpf('-0.16672020794374009368173069114232'), mpf('0.0017347969670028699952536258448428'), mpf('0.030476776882736255008442090940891'), mpf('0.031367983936293708132863028796137'), mpf('-0.059705443130453865666436250207982'), mpf('0.044138992383643465702358398679791'), mpf('-0.020878146958221387075262241860894'), mpf('0.0071705769629258347163718694948124'), mpf('-0.0018853707284993811178918233806489'), mpf('0.00038852921454656700668525793713618'), mpf('-0.000063189238100918680871747046644829'), mpf('0.0000080744578331789335381866759313996'), mpf('-0.00000079953271712729191308361756686267'), mpf('0.000000059920184102454497172442403736275'), mpf('-0.0000000032749187293368076399349849567233'), mpf('1.2279767047232116846275923165332e-10'), mpf('-2.8177206999453074313004284337679e-12'), mpf('2.978001446074926878769596543453e-14')]
+
+
+plt.title(r"$y_6$")
 def g0(x):
-	return polyeval(polydiff(z),mpf(x))
+	return x*5*polyeval(z,x)**4
 
 def g1(x):
-	return polyeval(z,mpf(x))
+	return 2
 
+def g2(x):
+	return x
 
 # What our ODE equals
 def f(x):
 
-	return mpf(x)+polyeval(z,mpf(x))*polyeval(polydiff(z),mpf(x))
+	return x*4*polyeval(z,x)**5
 
 
-D = [-1,1]
-g = [g0,g1]
-solution = DESolver(g,f,D=D,XY=[[0],[1]],basis="ec",N=3)
+D = [0,10]
+g = [g0,g1,g2]
+solution = DESolver(g,f,D=D,XY=[[0],[1]],DXDY=[[0],[0]],basis="c",N=20)
+print(solution)
 
 points = 100
 dx = (D[1]-D[0])/(points-1)
 
 xlist = [D[0]+i*dx for i in range(points)]
+
+
 def ef(x):
-	return math.sqrt(1+x**2)
+	return 1/(math.sqrt(1+x**2/3))
 
 eylist = [ef(x) for x in xlist]
-plt.plot(xlist,eylist,"-r")
+plt.plot(xlist,eylist,"-r",label=r"$y=\frac{1}{\sqrt{1+\frac{x^2}{3}}}$")
 
 
 
 aylist = [polyeval(solution,x) for x in xlist]
-plt.plot(xlist,aylist,"-g")
+plt.plot(xlist,aylist,"--g",label=r"$y=y_6$")
+
+"""
+polys=[[1],[-1,0,2],[1,0,-8,0,8]]
+a = [    1.2173411583055409963875616632, 0.20842027928171569810339479336, -0.0089208790238252982841668698426]
+solution1 = []
+
+for i in range(3):
+	solution1 = polyadd(solution1,polysmult(polys[i],a[i]))
+print(solution1)
+def f(x):
+
+	return polyeval(solution1,x)
+nrlist = []
+for x in xlist:
+	nrlist.append(f(x))
+plt.plot(xlist,nrlist,"--b")
+"""
+plt.legend(loc="upper right")
 plt.show()
 
 
