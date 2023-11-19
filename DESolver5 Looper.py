@@ -6,7 +6,7 @@ mpmath.mp.prec = 1000
 #DESolver(g,f,D,XY=[],DXDY=[], basis="c", N=20)
 
 
-
+plt.grid()
 
 z = [0,1]
 D = [-1,1]
@@ -58,7 +58,6 @@ for i in range(7):
 		plt.plot(xlist,aylist,":",label=lab)
 
 plt.title("Domain $[-1,1]$")
-plt.grid()
 plt.legend()
 plt.show()
 plt.clf()
