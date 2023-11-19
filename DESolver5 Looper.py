@@ -1,62 +1,86 @@
 from DESolver5 import *
 
-mpmath.mp.dps = 500
-mpmath.mp.prec = 500
+mpmath.mp.dps = 1000
+mpmath.mp.prec = 1000
 
 #DESolver(g,f,D,XY=[],DXDY=[], basis="c", N=20)
 
-def g0(x):
-	return x*2*polyeval(z,x)
-
-def g1(x):
-	return 2
-
-def g2(x):
-	return x
-
-# What our ODE equals
-def f(x):
-
-	return x*1*polyeval(z,x)**2
 
 
 
-z = [1,0,-1/6,0,1/60]
-D = [0,10]
-g = [g0,g1,g2]
+z = [0,1]
+D = [-1,1]
 
-points = 100
+
+points = 200
 dx = (D[1]-D[0])/(points-1)
 xlist = [D[0]+i*dx for i in range(points)]
-eylist = [polyeval([mpf('1.0000000000000000000000000000047'), mpf('-2.2602706304164754708824906134263e-31'), mpf('-0.16666518468218911239248943440978'), mpf('-0.000047835981503579706215130103926251'), mpf('0.01696966729136715209864594789421'), mpf('-0.00082768565738339960510628879823089'), mpf('-0.00021315033106398116541657630397451'), mpf('-0.001142211121455447520625057207395'), mpf('0.00079340538924191988255744009223085'), mpf('-0.00025719796029884002148253633284648'), mpf('0.000049292913255131130572971690215288'), mpf('-0.0000055123584567614088154532744596407'), mpf('0.00000021699557462006678757781517297784'), mpf('0.000000035770139645078675023748106876978'), mpf('-0.0000000071864691730238485756714843626306'), mpf('6.3167756019371508807520732423845e-10'), mpf('-3.1661312697384011647279134005873e-11'), mpf('8.536252016481749644899324395377e-13'), mpf('-8.0781727545594862508031761285327e-15'), mpf('-6.7176119461117863016612982273469e-17')],x) for x in xlist]
 
+def h(x):
+	return math.asin(x)
 
+eylist = [h(x) for x in xlist]
 
-for i in range(1):
+plt.plot(xlist,eylist,"-k",label="Exact Solution", alpha=0.8)
+
+for i in range(7):
+
+	def g0(x):
+		return -math.sin(polyeval(z,x))*polyeval(polydiff(z.copy()),x)
 
 	def g1(x):
-		return 2
+		return math.cos(polyeval(z,x))
 
-	def g2(x):
-		return x
+	
 
 	# What our ODE equals
 	def f(x):
 
-		return x*1*polyeval(z,x)**2
+		return 1-math.sin(polyeval(z,x))*polyeval(polydiff(z.copy()),x)*polyeval(z,x)
 
-	z = DESolver(g,f,D=D,XY=[[0],[1]],DXDY=[[0],[0]],basis="c",N=30)
-	print(i)
-	print("This is solution #", i, ": ",z)
+	g = [g0,g1]
+	yi1 = z.copy()
+	z = DESolver(g,f,D=D,XY=[[0],[0]],DXDY=[],basis="c",N=50)
+	yi = z.copy()
+
+
+
+	#print("This is solution #", i, ": ",z)
 	aylist = [polyeval(z,x) for x in xlist]
+	lab = "Iteration: "+ str(i+1)
+	if i == 3:
+		p1 = z.copy()
 
-	plt.plot(xlist,eylist,"r",label="20 OP")
-	plt.plot(xlist,aylist,"--g",label="50 OP")
-	plt.show()
-	plt.clf()
+	if i == 5:
+		p2 = z.copy()
+
+	if i%4==1:
+		plt.plot(xlist,aylist,":",label=lab)
+
+plt.title("Domain $[-1,1]$")
+plt.grid()
+plt.legend()
+plt.show()
+plt.clf()
+
+a = 0.9
+b = 1
+dx = (1-0.9)/(points-1)
+xlist = [0.9+i*dx for i in range(points)]
+y1list = [polyeval(p1,x) for x in xlist]
+y2list = [polyeval(p2,x) for x in xlist]
+eylist = [h(x) for x in xlist]
+
+plt.plot(xlist,eylist,"-k",label="Exact Solution")
+plt.plot(xlist, y1list, "-r", label="Iteration: 2")
+plt.plot(xlist,y2list,"-g", label="Iteration: 6")
 
 
-print(z)
+plt.title("Domain $[0.9,1]$")
+plt.grid()
+plt.legend()
+
+plt.show()
 
 
 
