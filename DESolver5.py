@@ -6,6 +6,7 @@ from mpmath import *
 import math
 import matplotlib.pyplot as plt
 import latex
+import numpy as np
 
 plt.xlabel(r"$x$")
 plt.ylabel(r"$y$")
@@ -26,6 +27,7 @@ def points(m,a,b,basis="c"):
 
 		for point in points1:
 			points2.append((point*(b-a)/2+(b+a)/2))
+
 	elif basis == "ec":
 		# Even Chebyshev
 
@@ -37,7 +39,17 @@ def points(m,a,b,basis="c"):
 		for point in points1:
 			if point > 0:
 				points2.append((point*(b-a)/2+(b+a)/2))
+	elif basis == "t":
+		# Trigonometric
+		points1 = ChebyshevNodes(m)
 
+		# Transformed Points
+		points2 = []
+
+		for point in points1:
+			points2.append((point*(b-a)/2+(b+a)/2))
+	elif basis == "l":
+		j = 1
 	return points2
 
 def polygen(m,a,b,basis="c"):
@@ -78,6 +90,24 @@ def polygen(m,a,b,basis="c"):
 			p1 = polyxtrans(p1,(b+a)/2)
 				
 			polys.append(p1)
+	elif basis == "t":
+		# Trigonometric basis the basis functions are very predictable so we will just form them as needed
+		if m % 2 == 1:
+			c = [0]*int((m-1)/2+1)
+			s = [0]*int((m-1)/2)
+
+		polys = []
+		for i in range(m):
+			c1 = c.copy()
+			s1 = s.copy()
+			if i < int((m+1)/2):
+				c1[i] = 1
+			else:
+				s1[int(i-(m+1)/2)] = 1
+			polys.append([c1,s1])
+	elif basis == "l":
+		return LaguerreGen(m)
+
 
 	return polys
 
@@ -96,7 +126,7 @@ def DESolver(g,f,D,XY=[],DXDY=[], basis="c", N=20):
 	a = D[0]
 	b = D[1]
 
-	# We start off by creating the Collocation points. 
+	# We start off by creating the Collocation points and Basis Functions
 	if basis == "c":
 		# Chebyshev 
 		points2 = points(N-n,a,b,"c")
@@ -106,16 +136,18 @@ def DESolver(g,f,D,XY=[],DXDY=[], basis="c", N=20):
 		# Even Chebyshev
 		points2 = points(N-n,a,b,"ec")
 		polys = polygen(N,a,b,"ec")
+	elif basis == "t":
+		points2 = points(N-n,a,b,"t")
+		polys = polygen(N,a,b,"t")
+	elif basis == "l":
+		polys = polygen(N,a,b,"l")
+		p = polys[N-2].copy()
+		points2 = rootfind(p,NR=50)
 
-
-
-
-
-	# So polys are our transformed Chebyshev Polynomials
 
 	### Next let's create the N equations
 
-	# This works so long as it's not a trigonometric polynomial basis
+	
 	if basis != "t":
 		# Mx=B where x is the vector representing our coefficients a0,a1,a2...
 		M = []
@@ -188,20 +220,104 @@ def DESolver(g,f,D,XY=[],DXDY=[], basis="c", N=20):
 
 			M.append(R)
 			B.append(f(x))
+	elif basis == "t":
+		# Now we will repeat the above except for our Trignometric Polynomials. For simplicity in coding we will restrict the value
+		# of N to being odd
+		if N % 2 == 0:
+			return "Error"
+
+		# Initialise M and B
+		M = []
+		B = []
+		if XY != []:
+			for i in range(len(XY[0])):
+
+				R=[]
+
+				for j in range(int((N+1)/2)):
+					R.append(cos(XY[0][i]*j))
+
+				for j in range(int((N-1)/2)):
+					R.append(sin(XY[0][i]*(j+1)))
+
+				B.append(XY[1][i])
+				M.append(R)
+
+
+		# Derivatives
+		if DXDY != []:
+			for i in range(len(DXDY[0])):
+
+				R = []
+
+				for j in range(int((N+1)/2)):
+					R.append(-i*sin(DXDY[0][i]))
+
+				for j in range(int((N-1)/2)):
+					R.append((i+1)*cos((i+1)*DXDY[0][i]))
+
+
+				B.append(DXDY[1][i])
+				M.append(R)
+
+		for point in points2:
+			R = []
+
+			for poly in polys:
+				s = 0
+				for i in range(n+1):
+					s += g[i](point)*trigeval(trigdiffn(poly.copy(),i),point)
+				R.append(s)
+
+			B.append(f(point))
+			M.append(R)
+
 
 
 	M = mpmath.matrix(M)
 	B = mpmath.matrix(B)
+
+
 	A = mpmath.lu_solve(M,B)
 
-
-	solution = []
-	for i in range(N):
-		solution = polyadd(solution,polysmult(polys[i],A[i]))
+	if basis != "t":
+		solution = []
+		for i in range(N):
+			solution = polyadd(solution,polysmult(polys[i],A[i]))
+	else:
+		solution = [A[0:int((N+1)/2)],A[int((N+1)/2):N]]
 
 	return solution
 
 
+"""
+#Testing for Trigonometric Basis
+def g0(x):
+	return 1
+
+def g1(x):
+	return 1
+
+g = [g0,g1]
+
+def f(x):
+	return 0
+
+p = DESolver(g,f,[0,1],XY=[[0],[1]],basis="t",N=7)
+
+def ax(x):
+	return trigeval(p,x)
+
+ps = 100
+dx = 1/100
+xlist = [0+i*dx for i in range(ps)]
+aylist = [ax(x) for x in xlist]
+eylist = [math.e**(-x) for x in xlist]
+
+plt.plot(xlist,aylist,"-r")
+plt.plot(xlist,eylist,"--g")
+plt.show()
+"""
 
 
 """

@@ -1,28 +1,27 @@
 from DESolver5 import *
 
-mpmath.mp.dps = 500
-mpmath.mp.prec = 500
+mpmath.mp.dps = 1000
+mpmath.mp.prec = 1000
 
 
 plt.clf()
 plt.grid()
 
-N = 25
-it = 7
+N = 63
 c = [1]
 s = []
 
 
 z = [c,s]
-D = [0,10]
+D = [0,3]
 
 n = 3
 points = 200
 dx = (D[1]-D[0])/(points-1)
 xlist = [D[0]+i*dx for i in range(points)]
 
-""" Trig Functions
-for i in range(it):
+
+for i in range(6):
 
 	# OUr ODE's Coefficients
 	def g0(x):
@@ -51,63 +50,12 @@ for i in range(it):
 
 	aylist = [trigeval(z,x) for x in xlist]
 	lab = "Iteration: "+ str(i+1)
-	plt.plot(xlist,aylist,":r",label=lab)
-"""
-plt.clf()
-plt.grid()
-plt.title("Laguerre Basis")
+
+# Best Solution Found
+p2 = [mpf('1.0000000000000000000000000000032'), mpf('1.6543738222286355977750850526805e-31'), mpf('-0.16666417267038417201429394558274'), mpf('-0.000082957743306267661150973724981338'), mpf('0.025605131576298947177404546425636'), mpf('-0.0020693138682529209065091112245346'), mpf('0.00033744217231567327571755035623571'), mpf('-0.0051820675069185669710686712039039'), mpf('0.0049002297718746633097810693107764'), mpf('-0.0024172645012616679802277913357769'), mpf('0.00078588078352131481990817087547127'), mpf('-0.0001829408346829232838159991255107'), mpf('0.000031604756017320192649462133458241'), mpf('-0.0000041081849558739600674186262096809'), mpf('0.00000040154867323610561326153897040344'), mpf('-0.000000029115664645186339119075126205264'), mpf('0.0000000015204497841228067678574927410511'), mpf('-5.4095346916174923801327285037428e-11'), mpf('1.1742743039932198914195953196549e-12'), mpf('-1.1737966146828494002811853010005e-14')]
 
 z1 = [1]
-for i in range(it):
-
-	# OUr ODE's Coefficients
-	def g0(x):
-		return n*polyeval(z1,x)**(n-1)
-
-	def g1(x):
-		return 2/x
-
-	def g2(x):
-		return 1
-
-	# What our ODE equals
-	def f(x):
-		return (n-1)*polyeval(z1,x)**n
-
-	g = [g0,g1,g2]
-	yi1 = z.copy()
-	z2 = DESolver(g,f,D=D,XY=[[0],[1]],DXDY=[[0],[0]],basis="l",N=N)
-	yi = z.copy()
-
-	def ser(x):
-		return abs(x*n*polyeval(z1,x)**(n-1)*polyeval(z2,x)+2*polyeval(polydiff(z2),x)+x*polyeval(polydiffn(z2,2),x)-(n-1)*polyeval(z1,x)**n)
-
-
-	print(-math.log(integrate(ser,0,D[1]),10)/D[1], "Laguerre Error, Iteration: ", i)
-	z1 = z2
-
-	ay1list = [polyeval(z1,x) for x in xlist]
-	lab = "Iteration: " + str(i+1)
-	if i < it:
-		if i == 0:
-
-			plt.plot(xlist,ay1list,":g",label="Iterates")
-		else:
-			plt.plot(xlist,ay1list,":g")
-
-	if i == it-1:
-		plt.plot(xlist,ay1list,"-r",label="Final Approximate Solution")
-
-plt.legend()
-plt.show()
-
-
-plt.clf()
-plt.title("Chebyshev Basis")
-plt.grid()
-
-z1 = [1]
-for i in range(it):
+for i in range(6):
 
 	# OUr ODE's Coefficients
 	def g0(x):
@@ -131,20 +79,29 @@ for i in range(it):
 	def ser(x):
 		return abs(x*n*polyeval(z1,x)**(n-1)*polyeval(z2,x)+2*polyeval(polydiff(z2),x)+x*polyeval(polydiffn(z2,2),x)-(n-1)*polyeval(z1,x)**n)
 
-
-	print(-math.log(integrate(ser,0,D[1]),10)/D[1], "Chebyshev Error, Iteration: ", i)
+	print(-math.log(integrate(ser,0,D[1]),10)/D[1], "Polynomial Error, Iteration: ", i)
 	z1 = z2
 
 	ay1list = [polyeval(z1,x) for x in xlist]
 	lab = "Iteration: " + str(i+1)
-	if i < it:
-		if i ==0:
-			plt.plot(xlist,ay1list,":y",label="Iterates")
-		else:
-			plt.plot(xlist,ay1list,":y")
 
-	if i == it-1:
-		plt.plot(xlist,ay1list,"-r",label="Final Approximate Solution")
+
+# Exact Error 
+def eer(x):
+	return abs(polyeval(z1,x)-trigeval(z,x))
+# Residual Error
+def rer(x):
+	return abs(x*trigeval(z,x)**(n)+2*trigeval(trigdiff(z),x)+x*trigeval(trigdiffn(z,2),x))
+
+def rerp(x):
+	return abs(x*polyeval(z1,x)**(n)+2*polyeval(polydiff(z1),x)+x*polyeval(polydiffn(z1,2),x))
+
+print(-math.log(integrate(eer,0,2),10)/D[1], " Exact Error")
+print(-math.log(integrate(rer,0,2),10)/D[1], " Residual Error Trig")
+print(-math.log(integrate(rerp,0,2),10)/D[1], " Residual Error Polynomial")
+plt.plot(xlist,aylist,":",label=lab)
+eylist = [polyeval(p2,x) for x in xlist]
+plt.plot(xlist,eylist,"-g")
 plt.legend()
 plt.show()
 
@@ -184,25 +141,6 @@ N = 23
 1.9128199388065437  Residual Error Trig
 3.5971059861654475  Residual Error Polynomial
 
--0.19109780022903847 Polynomial Error, Iteration:  0
--0.14024298292542375 Polynomial Error, Iteration:  1
--0.09180318961133646 Polynomial Error, Iteration:  2
--0.09421768395046881 Polynomial Error, Iteration:  3
--0.06156375604748012 Polynomial Error, Iteration:  4
--0.04327087545189924 Polynomial Error, Iteration:  5
--0.03931008259315026 Polynomial Error, Iteration:  6
-
--0.19138138525594317 Polynomial Error, Iteration:  0
--0.13964281919652366 Polynomial Error, Iteration:  1
--0.09179464094830983 Polynomial Error, Iteration:  2
--0.07874667929518216 Polynomial Error, Iteration:  3
--0.03379899920565697 Polynomial Error, Iteration:  4
--0.02268107584645695 Polynomial Error, Iteration:  5
--0.0227573849768559 Polynomial Error, Iteration:  6
-
-"""
-
-"""
 N = 33
 -0.23299011725699745 Trigonometric Error, Iteration:  0
 -0.09547040123254436 Trigonometric Error, Iteration:  1

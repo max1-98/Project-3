@@ -1,0 +1,7 @@
+Plan for January:
+
+- Investigate why increasing the number of orthogonal polynomials when solving LE causes problems (test for a small domain such as [0,5]
+
+- Find out why there is worse convergence on a wide domain for trigonometric basis despite getting a lower residual error on small domains
+
+- Meet someone who studies functional analysis at Durham to talk about the step used in 

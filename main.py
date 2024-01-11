@@ -1,12 +1,14 @@
 # This document will contain all of my functions that I will call upon later
 
 import math
-import numpy
+import numpy as np
 import mpmath
+from mpmath import *
+import cmath
 mpmath.mp.dps = 100
 mpmath.mp.prec = 100
 
-###*** Below are all of the polynomial functions we will need ***###
+### Polynomial Functions ###
 
 def bexp(a,n):
 	# Expands (a+x)^n and leaves it as a polynomial
@@ -147,9 +149,10 @@ def polyytrans(p,a):
 
 	return p
 
-# Orthogonal Polymials 
+### Orthogonal Polymials ###
 
-# Chebyshev Polynomials Generator
+
+# Chebyshev Polynomials
 def ChebyshevGen(N):
 
 	# We will create N Chebyshev polynomials
@@ -180,7 +183,7 @@ def ChebyshevGen(N):
 
 	return C
 
-# This finds the Nth set of Chebyshev Nodes 
+# Chebyshev Nodes 
 def ChebyshevNodes(N):
 
 	CN = []
@@ -189,219 +192,120 @@ def ChebyshevNodes(N):
 
 	return CN
 
+# Laguerre Polynomial
+def LaguerreGen(N):
 
-# This creates the ith Lagrange Interpolating polynomial of a set of x values called x
-def lagpoly(x, i):
+	L = [[1],[1,-1]]
 
-	N = len(x)
+	for i in range(N-2):
+		L.append(polysmult(polyadd(polymult([2*i+3,-1],L[i+1].copy()),polysmult(L[i].copy(),-(i+1))),1/(i+2)))
 
-	# Here we create our factor. In this case we have calculate P but later we will multiply by 1/P
-	P = 1
-	for j in range(N):
-		if j != i:
-			P *= (x[i]-x[j])
+	return L
 
-	# Initialise our polynomial as p(x) = 1
-	p1 = [1]
+### Root Finding 
 
-	# Now we multiply by each factor
-	for j in range(N):
-		if j != i:
-			p1 = polymult(p1,[-x[j],1])
+# High Accuracy Root Finding For a Polynomial
+def rootfind(p,NR=40):
+	# Our guesses will come from using the np.roots()
+	# We'll use Numpy as we aren't too bothered about the accuracy
+	# p = [p0,p1...pn]
+	p1 = p.copy()
 
-	return polysmult(p1, 1/P)
+	p1.reverse()
+	poly = np.poly1d(p1)
+	roots = poly.roots
 
-def legpoly(N):
+	roots1 = []
+	for root in roots:
+		roots1.append(root.real)
 
-	# This will generate the first N normalised legendre polynomials N > 2
-	P = [[1/math.sqrt(2)]]
+	roots1.sort()
 
-	# We'll be doing this by Gram Schmidt
-	for n in range(1,N):
+	# Next for additional accuracy we can use the Newton-Raphson method on each root
+	dp = polydiff(p.copy())
+	for i in range(len(p)-1):
 
-		# Stage 1 
-		p1 = [0]*(n)
-		p1.append(1)
+		x = mpf(roots1[i])
+		for j in range(NR):
+			x = x-polyeval(p,x)/polyeval(dp,x)
 
+		roots1[i] = x
 
-		# Stage 2 Creating our orthogonal polynomial
-		p3 = p1
-		for j in range(n):
+	return roots1
 
-			p2 = P[j].copy()
-			p2 = polysmult(p2,-polyip(p2,p3))
-			p1 = polyadd(p1,p2)
 
+#--- The Following Function is Unstable Numerically ---#
+def rootsqr(p,QR=100):
+	# First we convert p to a monic polynomial
+	p = polysmult(p,mpf(1/p[-1]))
+	N = QR
+	DIM = len(p)-1
 
-		# Stage 3 Normalising our polynomial
-		P.append( polysmult(p1,1/math.sqrt(polyip(p1,p1))) )
+	# Then we form our Companion Matrix
+	ROW = [0]*DIM
 
-	return P
+	A = []
+	for i in range(DIM):
+		A.append(ROW.copy())
 
+	for j in range(DIM-1):
+		A[j+1][j] = 1
 
-def gaussint(f,a,b, N=10, nodes="C"):
+	A = np.array(A,dtype=object)
 
-	# This function will approximate the integral between a and b of f(x) using Gaussian Integration
+	for i in range(DIM):
+		A[i,DIM-1] = -p[i]
 
+	# Now we use the QR Algorithm to find an approximation of the roots
+	for k in range(N):
+		# Next we need to find out Orthogonal Matrix. 
+		Q = A.copy()
 
-	### N is the number of nodes
+		qm = []
 
-	if nodes == "C":
-		# Chebyshev
+		for i in range(DIM):
 
-		# NOTE Chebyshev GI Weights are always pi/n
-		CN = ChebyshevNodes(N)
+			# ith row of A
+			a = A[:,i].copy()
 
-		# We need to translate the CN first. 
-		S = 0
+			# ith row of A, used to initialize ith row of q
+			qt = A[:,i].copy()
 
-		for i in range(N):
+			# Applying G-S Algorithm
+			for j in range(i):
+				qt += -np.dot(a,Q[:,j].copy())*Q[:,j].copy()
 
-			S += f((b-a)/2*CN[i]+(b+a)/2)*math.sqrt(1-CN[i]**2)
+			# Normalising qt
+			qm.append(np.dot(qt,qt))
+			q = (1/(qm[i])**(1/2))*qt
 
-		return (b-a)/2*math.pi/N*S
-	elif nodes == "L":
-		# Lobatto
-		LN = legpoly(N)
-	else:
-		return 0
+			# Setting the ith row of Q to be q
+			Q[:,i] = q
 
+		# Now working on R
+		R = np.zeros([DIM,DIM])
 
-# Here we create our Non-Linear Representations along with their Operations so we can generate our system of equations
-# from an ODE. We'll also introduce a Jacobian Function
-# See my Notes for how each of these operators is meant to work mathematically
+		for i in range(DIM):
+			for j in range(DIM):
+				if j >= i:	
+					if i == j:
+						R[i,j] = (qm[i])**(1/2)
+					else:
+						R[i,j] = np.dot(A[:,j],Q[:,i])
 
-def dim(x):
+		# Now we find the next term by computing RQ
+		A = np.matmul(R,Q).copy()
 
-	z = x.copy()
-	n = 0
-	while not isinstance(z, int) and not isinstance(z,int):
-		z = z[-1]
-		n += 1
+	# The approximate roots are the diagonal elements of A	
+	roots = []
+	for i in range(DIM):
+		roots.append(A[i,i])
+#-------------------------------------------------------#
 
 
-	return n
+### Numerical Integration ###
 
-def add(x,y):
-	n = len(x)
-	m = len(y)
-
-	if n > m:
-		m = n
-
-	for i in range(m):
-
-		# Then we just term wise add
-
-		for j in range(len(x[i])):
-
-			if len(x[i]) != len(y[i]):
-				return "Size-Error"
-			if i < 2:
-				x[i][j] = x[i][j] + y[i][j]
-			elif i < 3:
-				for k in range(len(x[i])):
-					x[i][j][k] = x[i][j][k] + y[i][j][k]
-
-	return x
-
-def smult(x,s):
-
-	n = len(x)
-
-	for i in range(n):
-
-		# Then we just term wise add
-
-		for j in range(len(x[i])):
-
-			if i < 2:
-				x[i][j] = s*x[i][j]
-			elif i < 3:
-				for k in range(len(x[i])):
-					x[i][j][k] = s*x[i][j][k]
-	return x
-
-
-def mult(x,s):
-	n = dim(x)
-
-	if n == 1:
-		for i in range(len(x)):
-			x[i] = x[i]*s
-	elif n == 2:
-		for i in range(len(x)):
-			for j in range(len(x)):
-				x[i][j] = x[i][j]*s
-
-	return x
-
-def mcross(x,y):
-	# This is that product rule described in my Notes except just for when they are singular ones.
-	# i and j are the sizes of x and y respectively
-
-	# First we need to determine the size of x and y
-	n = dim(x)
-	k = dim(y)
-
-	for i in range(n+k):
-		m = [0]*len(y)
-		for j in range(i):
-			M = []
-			for k in range(len(y)):
-				M.append(m.copy())
-
-			m = M.copy()
-	if k+n == 0:
-		return [x[0]*y[0]]
-
-	if k+n == 1:
-		if n > k:
-			print(x)
-			print(y)
-			return mult(x,y[0])
-		else:
-			return mult(y,x[0])
-
-	if k+n == 2:
-		for i in range(len(x)):
-			for j in range(len(x)):
-				m[i][j] = x[i]*y[j]
-
-	return m
-
-
-def cross(x,y):
-	# Our hardest function. This will deal with multiplying full representations of what we saw out
-
-	# Our new size
-	n = len(x)+len(y)-2
-
-
-	# So here we initialize our result. We create it as just zeros. 
-
-	z = [[0]]
-	for i in range(n):
-		m = [0]*n
-		for j in range(i):
-			M = []
-			for k in range(n):
-				M.append(m.copy())
-
-			m = M.copy()
-		z.append(m.copy())
-
-	for xs in x:
-		for ys in y:
-			xs2 = xs.copy()
-			ys2 = ys.copy()
-			z = add(mcross(xs2,ys2),z)
-
-	return z 
-
-#print(cross([[0],[0,1],[[1,1],[1,1]]],[[0],[0,1],[[1,1],[1,1]]]))
-
-
+# Trapezium Rule
 def integrate(f,a,b,N=1000):
 
 	dx = (b-a)/N
@@ -412,3 +316,113 @@ def integrate(f,a,b,N=1000):
 
 
 	return 1/2*dx*S
+
+### Numerical Differentiation ### 
+def CSD(r,x,a=0,w=1,d=1,h=10**(-8)):
+
+
+	# f is the function, x is the point we are calculating the derivative at and d specifies which derivative
+	def f(x,r,a=0,w=1):
+
+		if x == a+r*w:
+			return 1
+		else:
+			return sin(pi/w*(x-a-r*w))/(pi/w *(x-a-r*w))
+
+	if d == 1:
+		z = complex(x,h)
+		return f(x,r,a,w).imag/h
+	elif d == 2:
+		z = complex(x,h)
+		return -2*(f(z,r,a,w).real-f(x,r,a,w))/h**2
+	elif d == 3:
+		z = complex(x,h)
+		y = complex(x,2*h)
+		return 1/h**3*(2*f(z,r,a,w).imag-f(y,r,a,w).imag)
+
+	return "Please select an integer d between 0<d<4"
+
+
+### Trigonometric Functions ###
+
+def trigeval(p,x):
+	# In this case our list is a nested list: [[an],[bn]]
+	# With an the coefficients of the cosines and bn the coefficients of the sines
+	# The convention is b0=0 so we will ignore this to avoid invertibility problems later
+	# [[a0,a1,a2,a3...],[b1,b2,b3...]]
+
+	s = 0
+
+	for i in range(len(p[0])):
+		s += p[0][i]*cos(i*x)
+
+	for i in range(len(p[1])):
+		s += p[1][i]*sin((i+1)*x)
+
+	return s
+
+def trigdiff(p):
+	# In this case our lists get swapped in order and multiplied by the i value
+	pc = []
+
+	# Including the cos(0x) term which goes to 0
+	pc0 = [0]
+
+	# Using Derivative of sin(nx) -> ncos(nx)
+	for i in range(len(p[1])):
+		pc0.append(p[1][i]*(i+1))
+
+	pc1 = []
+	# Using Derivative of cos(nx) -> -nsin(nx)
+	for i in range(1,len(p[0])):
+		pc1.append(-p[0][i]*i)
+
+	# The Sines become the cosines and vice versa
+	pc.append(pc0)
+	pc.append(pc1)
+
+	return pc
+
+def trigdiffn(p,n):
+
+	pc = p
+	# Note the for loop won't do anything if n=0, corresponding to the 0th derivative ie. just our function
+	for i in range(n):
+		pc = trigdiff(pc)
+
+	return pc
+
+def trigadd(p1,p2):
+	c1 = p1[0]
+	s1 = p1[1]
+	c2 = p2[0]
+	s2 = p2[1]
+
+	if len(c1) > len(c2):
+		for i in range(len(c1)):
+			c3 = c1.copy()
+			c3[i] = c1[i] + c2[i]
+	else:
+		for i in range(len(c2)):
+			c3 = c2.copy()
+			c3[i] = c1[i] + c2[i]
+
+
+	if len(s1) > len(s2):
+		s3 = s1.copy()
+		for i in range(len(s1)):
+			s3[i] = s1[i] + s2[i]
+	else: 
+		s3 = s2.copy()
+		for i in range(len(s2)):
+			s3[i] = s1[i] + s2[i]
+	return [c3,s3]
+
+def trigmult(p,m):
+	p1 = p.copy()
+	for i in range(2):
+		for j in range(len(p[i])):
+			p1[i][j] = m*p[i][j]
+
+	return p1
+
