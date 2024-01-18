@@ -1,276 +1,142 @@
 from DESolver5 import *
+from datetime import datetime
 
-mpmath.mp.dps = 500
-mpmath.mp.prec = 500
 
+mpmath.mp.dps = 100
+mpmath.mp.prec = 100
+
+#  This procedure goes as follows:
+#  We use Chebyshev to find a good solution on [0,1]
+#  Then we sub x=1/u^k into our ODE
+#  This transforms the [1,infinity] domain to [1,0] and we use Chebyshev to solve for g(u)=y(1/u^k) then using u=1/x we find y(x)=g(x^(-1/k))
+
+# NOTE: For finding derivatives we can't use polydiff(g,x) for y(x) as y(x) is not a polynomial anymore...
 
 plt.clf()
 plt.grid()
-
+plt.title("Pray This Works")
 N = 25
-it = 7
-c = [1]
-s = []
-
-
-z = [c,s]
-D = [0,10]
-
+it1 = 3
+it2 = 13
 n = 3
+# Desired Domain
+# Note from 19.38 to 29.37 for k=3/2 we get a beserk solution
+D = [0,30]
+
+
+# First we use Chebyshev to create a good approximation on [0,1]
+
+# Domain and Initial Guess
+D1 = [0,1]
+z1 = [1]
+
+### ODE Solving
+start=datetime.now()
+# Iterative loop carrying out the QLM
+for i in range(it1):
+
+	# OUr ODE's Coefficients
+	def g0(x):
+		return n*polyeval(z1,x)**(n-1)
+
+	def g1(x):
+		return 2/x
+
+	def g2(x):
+		return 1
+
+	# What our ODE equals
+	def f(x):
+		return (n-1)*polyeval(z1,x)**n
+
+	g = [g0,g1,g2]
+	z1 = DESolver(g,f,D=D1,XY=[[0],[1]],DXDY=[[0],[0]],basis="c",N=N)
+
+
+# Chooses the power for our sub
+k = 3/2
+
+# Defines the interval that we are finding a solution on
+D2 = [D[1]**(-1/k),1]
+
+# Creates our Initial Conditions
+a = polyeval(z1,1)
+b = -k*polyeval(polydiff(z1.copy()),1)
+
+# Initial guess that satisfies our boundary conditions as well as decomposes as x goes to 0 
+# (which reflects as y goes to 0 as x goes to infinity before the substitution)
+
+z2 = [0,a-b+1,b-2,1]
+
+# Iterative loop carrying out the QLM
+for i in range(it2):
+
+	# OUr ODE's Coefficients
+	def g0(x):
+		return n*polyeval(z2,x)**(n-1)
+
+	def g1(x):
+		return (1-k)/k**2*x**(2*k+1)
+
+	def g2(x):
+		return x**(2*k+2)/k**2
+
+	# What our ODE equals
+	def f(x):
+		return (n-1)*polyeval(z2,x)**n
+
+	g = [g0,g1,g2]
+	z2 = DESolver(g,f,D=D2,XY=[[1],[a]],DXDY=[[1],[b]],basis="c",N=N)
+
+def f(x):
+	if x < 1:
+		return polyeval(z1, x)
+	else:
+		return polyeval(z2, x**(-1/k))
+
+def g(x):
+	return polyeval(z1,x)
+
 points = 200
 dx = (D[1]-D[0])/(points-1)
 xlist = [D[0]+i*dx for i in range(points)]
 
-""" Trig Functions
-for i in range(it):
+print("Solution Found in: ", datetime.now()-start)
+### Error Calculation
+start=datetime.now()
 
-	# OUr ODE's Coefficients
-	def g0(x):
-		return n*trigeval(z,x)**(n-1)
+# Calculates Residual Error for the solution: z1
+def er1(x):
+	return abs(x*polyeval(polydiffn(z1.copy(),2),x)+2*polyeval(polydiff(z1.copy()),x)+x*polyeval(z1.copy(),x)**n)
 
-	def g1(x):
-		return 2/x
+# Calculates Residual Error for the solution: z2
+def er2(x):
+	u = x**(-1/k)
+	return abs(1/(k**2)*x**(-2/k-1)*polyeval(polydiffn(z2.copy(),2),u)+(1/k**2-1/k)*x**(-1/k-1)*polyeval(polydiff(z2.copy()),u)+x*(polyeval(z2,u)**n))
 
-	def g2(x):
-		return 1
+def er(x):
+	if x < 1:
+		return er1(x)
+	else:
+		return er2(x)
 
-	# What our ODE equals
-	def f(x):
-		return (n-1)*trigeval(z,x)**n
+Error = integrate(er,D[0],D[1])
 
-	g = [g0,g1,g2] 
-	yi1 = z.copy()
-	z2 = DESolver(g,f,D=D,XY=[[0],[1]],DXDY=[[0],[0]],basis="t",N=N)
-	yi = z.copy()
-
-	def ser(x):
-		return abs(x*n*trigeval(z,x)**(n-1)*trigeval(z2,x)+2*trigeval(trigdiff(z2),x)+x*trigeval(trigdiffn(z2,2),x)-(n-1)*trigeval(z,x)**n)
-	print(-math.log(integrate(ser,0,D[1]),10)/D[1], "Trigonometric Error, Iteration: ", i)
-
-	z = z2
-
-	aylist = [trigeval(z,x) for x in xlist]
-	lab = "Iteration: "+ str(i+1)
-	plt.plot(xlist,aylist,":r",label=lab)
-"""
-plt.clf()
-plt.grid()
-plt.title("Laguerre Basis")
-
-z1 = [1]
-for i in range(it):
-
-	# OUr ODE's Coefficients
-	def g0(x):
-		return n*polyeval(z1,x)**(n-1)
-
-	def g1(x):
-		return 2/x
-
-	def g2(x):
-		return 1
-
-	# What our ODE equals
-	def f(x):
-		return (n-1)*polyeval(z1,x)**n
-
-	g = [g0,g1,g2]
-	yi1 = z.copy()
-	z2 = DESolver(g,f,D=D,XY=[[0],[1]],DXDY=[[0],[0]],basis="l",N=N)
-	yi = z.copy()
-
-	def ser(x):
-		return abs(x*n*polyeval(z1,x)**(n-1)*polyeval(z2,x)+2*polyeval(polydiff(z2),x)+x*polyeval(polydiffn(z2,2),x)-(n-1)*polyeval(z1,x)**n)
+print("Raw Error: ", Error)
+print("Error Normalised and Log'ed", -math.log(1/(D[1]-D[0])*Error,10))
 
 
-	print(-math.log(integrate(ser,0,D[1]),10)/D[1], "Laguerre Error, Iteration: ", i)
-	z1 = z2
+print("Error Calculations Found in: ", datetime.now()-start)
 
-	ay1list = [polyeval(z1,x) for x in xlist]
-	lab = "Iteration: " + str(i+1)
-	if i < it:
-		if i == 0:
+### Plotting
+start=datetime.now()
+ylist = [f(x) for x in xlist]
+y1list = [g(x) for x in xlist]
+plt.plot(xlist,ylist, "-r")
+ax = plt.gca()
 
-			plt.plot(xlist,ay1list,":g",label="Iterates")
-		else:
-			plt.plot(xlist,ay1list,":g")
-
-	if i == it-1:
-		plt.plot(xlist,ay1list,"-r",label="Final Approximate Solution")
-
-plt.legend()
+ax.set_ylim([-1, 1.3])
+print("Plots Created in: ", datetime.now()-start)
 plt.show()
 
 
-plt.clf()
-plt.title("Chebyshev Basis")
-plt.grid()
-
-z1 = [1]
-for i in range(it):
-
-	# OUr ODE's Coefficients
-	def g0(x):
-		return n*polyeval(z1,x)**(n-1)
-
-	def g1(x):
-		return 2/x
-
-	def g2(x):
-		return 1
-
-	# What our ODE equals
-	def f(x):
-		return (n-1)*polyeval(z1,x)**n
-
-	g = [g0,g1,g2]
-	yi1 = z.copy()
-	z2 = DESolver(g,f,D=D,XY=[[0],[1]],DXDY=[[0],[0]],basis="c",N=N)
-	yi = z.copy()
-
-	def ser(x):
-		return abs(x*n*polyeval(z1,x)**(n-1)*polyeval(z2,x)+2*polyeval(polydiff(z2),x)+x*polyeval(polydiffn(z2,2),x)-(n-1)*polyeval(z1,x)**n)
-
-
-	print(-math.log(integrate(ser,0,D[1]),10)/D[1], "Chebyshev Error, Iteration: ", i)
-	z1 = z2
-
-	ay1list = [polyeval(z1,x) for x in xlist]
-	lab = "Iteration: " + str(i+1)
-	if i < it:
-		if i ==0:
-			plt.plot(xlist,ay1list,":y",label="Iterates")
-		else:
-			plt.plot(xlist,ay1list,":y")
-
-	if i == it-1:
-		plt.plot(xlist,ay1list,"-r",label="Final Approximate Solution")
-plt.legend()
-plt.show()
-
-
-###
-"""
-
-N = 13
--0.23298537719997933 Trigonometric Error, Iteration:  0
--0.09550281372765011 Trigonometric Error, Iteration:  1
--0.062414257897812554 Trigonometric Error, Iteration:  2
--0.061971073732746455 Trigonometric Error, Iteration:  3
--0.06197102790718715 Trigonometric Error, Iteration:  4
--0.061971027907187 Trigonometric Error, Iteration:  5
--0.23299011753313312 Polynomial Error, Iteration:  0
--0.09547042148808955 Polynomial Error, Iteration:  1
--0.06235174549876707 Polynomial Error, Iteration:  2
--0.061907670066403186 Polynomial Error, Iteration:  3
--0.0619076225273964 Polynomial Error, Iteration:  4
--0.06190762252739613 Polynomial Error, Iteration:  5
-1.428290865700191  Exact Error
-0.8324844158452686  Residual Error Trig
-1.9206957849312234  Residual Error Polynomial
-
-N = 23
--0.23299011625728783 Trigonometric Error, Iteration:  0
--0.09547040922486921 Trigonometric Error, Iteration:  1
--0.06235175150349076 Trigonometric Error, Iteration:  2
--0.06190767603328138 Trigonometric Error, Iteration:  3
--0.06190762849492646 Trigonometric Error, Iteration:  4
--0.061907628494926197 Trigonometric Error, Iteration:  5
--0.23299011725715502 Polynomial Error, Iteration:  0
--0.0954704012312339 Polynomial Error, Iteration:  1
--0.062351736129308506 Polynomial Error, Iteration:  2
--0.061907660549862825 Polynomial Error, Iteration:  3
-2.7126256026953555  Exact Error
-1.9128199388065437  Residual Error Trig
-3.5971059861654475  Residual Error Polynomial
-
--0.19109780022903847 Polynomial Error, Iteration:  0
--0.14024298292542375 Polynomial Error, Iteration:  1
--0.09180318961133646 Polynomial Error, Iteration:  2
--0.09421768395046881 Polynomial Error, Iteration:  3
--0.06156375604748012 Polynomial Error, Iteration:  4
--0.04327087545189924 Polynomial Error, Iteration:  5
--0.03931008259315026 Polynomial Error, Iteration:  6
-
--0.19138138525594317 Polynomial Error, Iteration:  0
--0.13964281919652366 Polynomial Error, Iteration:  1
--0.09179464094830983 Polynomial Error, Iteration:  2
--0.07874667929518216 Polynomial Error, Iteration:  3
--0.03379899920565697 Polynomial Error, Iteration:  4
--0.02268107584645695 Polynomial Error, Iteration:  5
--0.0227573849768559 Polynomial Error, Iteration:  6
-
-"""
-
-"""
-N = 33
--0.23299011725699745 Trigonometric Error, Iteration:  0
--0.09547040123254436 Trigonometric Error, Iteration:  1
--0.06235173613180109 Trigonometric Error, Iteration:  2
--0.061907660552370535 Trigonometric Error, Iteration:  3
--0.06190761301384781 Trigonometric Error, Iteration:  4
--0.061907613013847514 Trigonometric Error, Iteration:  5
--0.23299011725715502 Polynomial Error, Iteration:  0
--0.09547040123093847 Polynomial Error, Iteration:  1
--0.06235173613249722 Polynomial Error, Iteration:  2
--0.06190766055304588 Polynomial Error, Iteration:  3
--0.06190761301452252 Polynomial Error, Iteration:  4
--0.06190761301452225 Polynomial Error, Iteration:  5
-3.984074126903842  Exact Error
-3.064936557440154  Residual Error Trig
-4.698440412769904  Residual Error Polynomial
-
-
-N = 43 
--0.2329901172571551 Trigonometric Error, Iteration:  0
--0.09547040123120425 Trigonometric Error, Iteration:  1
--0.06235173612921591 Trigonometric Error, Iteration:  2
--0.0619076605497691 Trigonometric Error, Iteration:  3
--0.06190761301124639 Trigonometric Error, Iteration:  4
--0.061907613011246095 Trigonometric Error, Iteration:  5
--0.23299011725715502 Polynomial Error, Iteration:  0
--0.09547040117958833 Polynomial Error, Iteration:  1
--0.06235173615308683 Polynomial Error, Iteration:  2
--0.06190766057677016 Polynomial Error, Iteration:  3
--0.06190761303826454 Polynomial Error, Iteration:  4
--0.06190761303826426 Polynomial Error, Iteration:  5
-5.232294516113281  Exact Error
-4.249255467960627  Residual Error Trig
-4.763390804631022  Residual Error Polynomial
-
-N = 53
--0.23299011725715513 Trigonometric Error, Iteration:  0
--0.09547040123120408 Trigonometric Error, Iteration:  1
--0.06235173612921561 Trigonometric Error, Iteration:  2
--0.06190766054976881 Trigonometric Error, Iteration:  3
--0.061907613011246095 Trigonometric Error, Iteration:  4
--0.0619076130112458 Trigonometric Error, Iteration:  5
--0.23299011725715502 Polynomial Error, Iteration:  0
--0.09547040106707193 Polynomial Error, Iteration:  1
--0.062351740706108306 Polynomial Error, Iteration:  2
--0.061907664892301824 Polynomial Error, Iteration:  3
--0.06190761735277303 Polynomial Error, Iteration:  4
--0.06190761735277275 Polynomial Error, Iteration:  5
-5.397767873960191  Exact Error
-5.005569156510812  Residual Error Trig
-4.551781033056177  Residual Error Polynomial
-
-N = 63
--0.23299011725715513 Trigonometric Error, Iteration:  0
--0.09547040123120408 Trigonometric Error, Iteration:  1
--0.06235173612921561 Trigonometric Error, Iteration:  2
--0.06190766054976881 Trigonometric Error, Iteration:  3
--0.061907613011246095 Trigonometric Error, Iteration:  4
--0.0619076130112458 Trigonometric Error, Iteration:  5
--0.23299011725715502 Polynomial Error, Iteration:  0
--0.09547040065414131 Polynomial Error, Iteration:  1
--0.06235141678596786 Polynomial Error, Iteration:  2
--0.061907386808409036 Polynomial Error, Iteration:  3
--0.06190733864709338 Polynomial Error, Iteration:  4
--0.06190733864580908 Polynomial Error, Iteration:  5
-5.27490328914896  Exact Error
-4.964472935654925  Residual Error Trig
-4.29703468584634  Residual Error Polynomial
-
-
-"""
