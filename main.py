@@ -42,7 +42,7 @@ def polydiff(F):
 
 	# F is a list of coefficient of the polynomial a0+a1x^1...
 	l = len(F)
-	f = [0]*len(F)
+	f = [0]*(len(F)-1)
 
 	for i in range(l-1):
 
@@ -50,12 +50,13 @@ def polydiff(F):
 
 	return f
 
+
 def polydiffn(F,n):
-
+	f = F.copy()
 	for i in range(n):
-		F = polydiff(F)
+		f = polydiff(f)
 
-	return F
+	return f
 
 # Polynomial evaluator 
 def polyeval(a,x):
@@ -95,8 +96,8 @@ def polymult(p1,p2):
 	return p3
 
 # This will multiply polynomials together and return the result 
-def polysmult(p1, a):
-
+def polysmult(p, a):
+	p1 = p.copy()
 	for i in range(len(p1)):
 		p1[i] = a*p1[i]
 
@@ -114,20 +115,22 @@ def polyip(p1,p2,W="L"):
 def polyxstret(p,a):
 	# Computes the calculation p(x) -> p(x/a)
 	o = len(p)
+	p1 = p.copy()
 
 	for i in range(o):
-		p[i] = p[i]/a**i
+		p1[i] = p1[i]/a**i
 
-	return p
+	return p1
 
 def polyystret(p,a):
 	# Computes the calculation p(x) -> ap(x)
 	o = len(p)
+	p1 = p.copy()
 
 	for i in range(o):
-		p[i] = a*p[i]
+		p1[i] = a*p1[i]
 
-	return p
+	return p1
 
 def polyxtrans(p,a):
 	# p(x) -> p(x-a)
@@ -144,13 +147,12 @@ def polyxtrans(p,a):
 
 def polyytrans(p,a):
 	# p(x) -> p(x) + a
+	p1 = p.copy()
+	p1[0] += a
 
-	p[0] += a
-
-	return p
+	return p1
 
 ### Orthogonal Polymials ###
-
 
 # Chebyshev Polynomials
 def ChebyshevGen(N):

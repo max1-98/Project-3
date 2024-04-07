@@ -2,8 +2,8 @@ from DESolver5 import *
 from datetime import datetime
 
 
-mpmath.mp.dps = 100
-mpmath.mp.prec = 100
+mpmath.mp.dps = 200
+mpmath.mp.prec = 200
 
 #  This procedure goes as follows:
 #  We use Chebyshev to find a good solution on [0,1]
@@ -11,17 +11,16 @@ mpmath.mp.prec = 100
 #  This transforms the [1,infinity] domain to [1,0] and we use Chebyshev to solve for g(u)=y(1/u^k) then using u=1/x we find y(x)=g(x^(-1/k))
 
 # NOTE: For finding derivatives we can't use polydiff(g,x) for y(x) as y(x) is not a polynomial anymore...
-
 plt.clf()
 plt.grid()
 plt.title("Pray This Works")
 N = 25
 it1 = 3
-it2 = 13
-n = 3
+it2 = 6
+n = 5
+
 # Desired Domain
-# Note from 19.38 to 29.37 for k=3/2 we get a beserk solution
-D = [0,30]
+D = [0,25]
 
 
 # First we use Chebyshev to create a good approximation on [0,1]
@@ -32,6 +31,7 @@ z1 = [1]
 
 ### ODE Solving
 start=datetime.now()
+
 # Iterative loop carrying out the QLM
 for i in range(it1):
 
@@ -54,19 +54,18 @@ for i in range(it1):
 
 
 # Chooses the power for our sub
-k = 3/2
+k = 1
 
 # Defines the interval that we are finding a solution on
 D2 = [D[1]**(-1/k),1]
 
 # Creates our Initial Conditions
-a = polyeval(z1,1)
-b = -k*polyeval(polydiff(z1.copy()),1)
+a2 = polyeval(z1,1)
+b2 = -k*polyeval(polydiff(z1.copy()),1)
 
 # Initial guess that satisfies our boundary conditions as well as decomposes as x goes to 0 
-# (which reflects as y goes to 0 as x goes to infinity before the substitution)
-
-z2 = [0,a-b+1,b-2,1]
+# (which reflects y goes to 0 as x goes to infinity before the substitution)
+z2 = [0,0,3*a2-b2,b2-2*a2]
 
 # Iterative loop carrying out the QLM
 for i in range(it2):
@@ -86,7 +85,7 @@ for i in range(it2):
 		return (n-1)*polyeval(z2,x)**n
 
 	g = [g0,g1,g2]
-	z2 = DESolver(g,f,D=D2,XY=[[1],[a]],DXDY=[[1],[b]],basis="c",N=N)
+	z2 = DESolver(g,f,D=D2,XY=[[1],[a2]],DXDY=[[1],[b2]],basis="c",N=N)
 
 def f(x):
 	if x < 1:
@@ -97,13 +96,15 @@ def f(x):
 def g(x):
 	return polyeval(z1,x)
 
-points = 200
+points = 300
 dx = (D[1]-D[0])/(points-1)
 xlist = [D[0]+i*dx for i in range(points)]
 
 print("Solution Found in: ", datetime.now()-start)
+
 ### Error Calculation
-start=datetime.now()
+start = datetime.now()
+
 
 # Calculates Residual Error for the solution: z1
 def er1(x):
@@ -132,11 +133,16 @@ print("Error Calculations Found in: ", datetime.now()-start)
 start=datetime.now()
 ylist = [f(x) for x in xlist]
 y1list = [g(x) for x in xlist]
-plt.plot(xlist,ylist, "-r")
+plt.plot(xlist,ylist, "-r",label="Final Solution")
 ax = plt.gca()
 
-ax.set_ylim([-1, 1.3])
+plt.xlabel("x")
+plt.ylabel("y")
+plt.title("Lane-Emden Solution $n=3$")
+plt.legend(loc="upper right")
+ax.set_ylim([-0.3, 1.1])
 print("Plots Created in: ", datetime.now()-start)
+
 plt.show()
 
 
