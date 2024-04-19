@@ -47,7 +47,7 @@ for i in range(it):
 
 	# Residual Error
 	def err(x):
-		return abs((x-1)*x**4*polyeval(polydiffn(z1,2),x)+2*x**4*polyeval(polydiff(z1),x)+(x-1)*polyeval(z1,x)**n)*1/(x)**2
+		return abs((x-1)*x**3*polyeval(polydiffn(z1,2),x)+2*x**3*polyeval(polydiff(z1),x)+(x-1)*polyeval(z1,x)**n)*1/(x)**2
 
 	print(-math.log(1/(D[1]-D[0])*integrate(err,D1[0],D1[1]),10), " IT" + str(i+1))
 

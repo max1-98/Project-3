@@ -7,8 +7,8 @@ mpmath.mp.prec = 300
 plt.clf()
 
 N = 25
-it = 35
-D = [0,25]
+it = 50
+D = [0,30]
 
 
 n = 5
@@ -47,8 +47,8 @@ for i in range(it):
 	ay1list = [polyeval(z1,x) for x in xlist]
 	lab = "Iteration: " + str(i+1)
 
-	plt.plot(xlist,ay1list,":g",label="Iterate")
 	plt.plot(xlist,y1list,"-r",label="Exact Solution")
+	plt.plot(xlist,ay1list,":g",label="Iterate")
 	plt.legend(loc="upper left")
 	ax = plt.gca()
 	plt.xlabel("x")

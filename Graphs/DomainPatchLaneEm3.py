@@ -1,24 +1,27 @@
-mpmath.mp.dps = 250
-mpmath.mp.prec = 250
+from DESolver5 import *
+from datetime import datetime
 
-M=5
+mpmath.mp.dps = 300
+mpmath.mp.prec = 300
+
+M=3
 n = M
 
 
-plt.title(r"One Chebyshev patch and one rational Chebyshev patche (Lane-Emden $n=5$ on $[0,50]$)")
+plt.title(r"3 Chebyshev sub-patches and 15 rational Chebyshev sub-patches (Lane-Emden $n=3$ on $[0,250]$)")
 
 start=datetime.now()
 
 # Total Domain [0,L1]
-D = [0,50]
+D = [0,250]
 
 ## Patches
 
 # Chebyshev
-c = 1
+c = 3
 
 # Rational Chebyshev 
-rc = 1
+rc = 15
 
 # Domain Chebyshev
 D1=[0,10]
@@ -31,7 +34,7 @@ D2 = [D1[1],D[1]]
 #bl = [i*pw for i in range(c+1)]
 
 ## Chebyshev patches
-bl = points(c-1,0,10,basis="c")
+bl = points(c-1,0,D1[1],basis="c")
 bl.reverse()
 bl.append(D1[1])
 bl.insert(0,0)
@@ -146,33 +149,23 @@ print("Solution Found in: ", datetime.now()-start, " seconds.")
 ### Error Calculations
 start=datetime.now()
 sc = 0
-ec = 0
 for i in range(c):
+
 	def err(x):
 		return abs(x*polyeval(polydiffn(zp[i],2),x)+2*polyeval(polydiff(zp[i]),x)+x*polyeval(zp[i],x)**M)
 
-	def er(x):
-		return abs(polyeval(zp[i],x)-1/sqrt(1+x**2/3))
-
-	ec += integrate(er,bl[i],bl[i+1])
 	sc += integrate(err,bl[i],bl[i+1])
 
 
 scr = 0
-ecr = 0
 for i in range(rc):
+
 	def err(x):
 		return abs((x-1)*x**3*polyeval(polydiffn(zp1[i],2),x)+2*x**3*polyeval(polydiff(zp1[i]),x)+(x-1)/x*polyeval(zp1[i],x)**M)*1/(x)**2
 
-	def er(x):
-		return abs(polyeval(zp1[i],1/(x+1))-1/sqrt(1+x**2/3))
-
 	scr += integrate(err,brk[rc-i-1],brk[rc-i])
-	ecr += integrate(er,bk[i],bk[i+1])
 
 s = sc+scr
-print("Exact Error Chebyshev Patch: ",ec)
-print("Exact Error Rational Chebyshev Patch: ", ecr)
 print("Residual Error Chebyshev Patch: ",sc)
 print("Residual Error Rational Chebshev Patch: ",scr)
 print("Residual Error on [0,b]: ",s)
@@ -186,14 +179,13 @@ start=datetime.now()
 points = 1000
 dx = (D[1]-D[0])/(points-1)
 xlist = [D[0]+i*dx for i in range(points)]
-plt.plot(xlist,[1/(sqrt(1+x**2/3)) for x in xlist],"-r",label=r"$y=\frac{1}{\sqrt{1+x^2/3}}$")
 
 for i in range(c):
 	points = 100
 	dx = (bl[i+1]-bl[i])/(points-1)
 	xlist = [bl[i]+j*dx for j in range(points)]
 	ylist = [polyeval(zp[i],x) for x in xlist]
-	plt.plot(xlist,ylist,"--g")
+	plt.plot(xlist,ylist,"-g")
 
 for i in range(rc):
 	points = 200
@@ -202,17 +194,16 @@ for i in range(rc):
 	ylist = [polyeval(zp1[i],1/(1+x)) for x in xlist]
 
 	if i == rc-1:
-		plt.plot(xlist,ylist,"--g",label=r"$y_{\text{approx}}$")
+		plt.plot(xlist,ylist,"-g",label=r"$y_{\text{approx}}$")
 	else:
-		plt.plot(xlist,ylist,"--g")
+		plt.plot(xlist,ylist,"-g")
 
 plt.xlabel("x")
 plt.ylabel("y")
 plt.legend()
 ax = plt.gca()
-ax.set_ylim([0, 1.1])
+ax.set_ylim([-0.5, 1.1])
 print("Plots made in: ", datetime.now()-start, " seconds.")
 plt.show()
-
 
 

@@ -1,3 +1,6 @@
+from DESolver5 import *
+from datetime import datetime
+
 mpmath.mp.dps = 250
 mpmath.mp.prec = 250
 
@@ -5,20 +8,20 @@ M=5
 n = M
 
 
-plt.title(r"One Chebyshev patch and one rational Chebyshev patche (Lane-Emden $n=5$ on $[0,50]$)")
+plt.title(r"4 Chebyshev sub-patches and 15 rational Chebyshev sub-patches (Lane-Emden $n=5$ on $[0,100]$)")
 
 start=datetime.now()
 
 # Total Domain [0,L1]
-D = [0,50]
+D = [0,100]
 
 ## Patches
 
 # Chebyshev
-c = 1
+c = 4
 
 # Rational Chebyshev 
-rc = 1
+rc = 15
 
 # Domain Chebyshev
 D1=[0,10]
@@ -213,6 +216,3 @@ ax = plt.gca()
 ax.set_ylim([0, 1.1])
 print("Plots made in: ", datetime.now()-start, " seconds.")
 plt.show()
-
-
-
