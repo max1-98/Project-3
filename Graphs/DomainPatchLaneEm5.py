@@ -17,10 +17,10 @@ D = [0,100]
 
 ## Patches
 
-# Chebyshev
+# Chebyshev subpatches
 c = 4
 
-# Rational Chebyshev 
+# Rational Chebyshev subpatches
 rc = 15
 
 # Domain Chebyshev
@@ -29,9 +29,6 @@ D1=[0,10]
 # Domain rational Chebyshev
 D2 = [D1[1],D[1]]
 
-## Equally wide sub patches for Chebsyshev
-#pw = 10/c
-#bl = [i*pw for i in range(c+1)]
 
 ## Chebyshev patches
 bl = points(c-1,0,10,basis="c")

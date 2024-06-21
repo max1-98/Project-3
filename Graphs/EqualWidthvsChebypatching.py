@@ -1,0 +1,292 @@
+from DESolver5 import *
+from datetime import datetime
+
+mpmath.mp.dps = 250
+mpmath.mp.prec = 250
+
+M=5
+n = M
+
+
+plt.title(r"4 Chebyshev sub-patches and 15 rational Chebyshev sub-patches (Lane-Emden $n=5$ on $[0,100]$)")
+
+start=datetime.now()
+
+# Total Domain [0,L1]
+D = [0,100]
+
+## Patches
+
+# Chebyshev
+c = 21
+
+# Rational Chebyshev 
+rc = 1
+
+# Domain Chebyshev
+D1=[0,10]
+
+# Domain rational Chebyshev
+D2 = [D1[1],D[1]]
+
+## Equally wide sub patches for Chebsyshev
+"""
+pw = 10/c
+bl = [i*pw for i in range(c+1)]
+"""
+
+## Chebyshev patches
+bl = points(c-1,0,10,basis="c")
+bl.reverse()
+bl.append(D1[1])
+bl.insert(0,0)
+
+
+## Rational Chebyshev patches
+
+# Domain in rational space
+Dr = [1/(1+D2[1]),1/(1+D2[0])]
+# In 1/(1+x) plane
+brk = points(rc-1,Dr[0],Dr[1],basis="c")
+brk.sort()
+brk.append(Dr[1])
+brk.insert(0,Dr[0])
+bk = []
+
+for x in brk:
+	bk.append((1-x)/x)
+
+bk.sort()
+
+## List of functions on each patch 
+zp = []
+zp1 = []
+
+
+### Chebyshev Sub Patches
+# Initial guess Chebyshev patch 1
+z = [1]
+b1 = 1
+b2 = 0 
+
+for j in range(c):
+
+	## Finding each iterate
+
+	# Creating the domain
+	Dc = [bl[j],bl[j+1]]
+	for i in range(7):
+
+		def g0(x):
+			return M*polyeval(z,x)**(M-1)
+
+		def g1(x):
+			return 2/x
+
+		def g2(x):
+			return 1
+
+		# What our ODE equals
+		def f(x):
+			return (M-1)*polyeval(z,x)**(M)
+
+		g = [g0,g1,g2]
+		yi1 = z.copy()
+		
+		z = DESolver(g,f,D=Dc,XY=[[Dc[0]],[b1]],DXDY=[[Dc[0]],[b2]],basis="c",N=25)
+
+	# Creating initial conditions for the next patch
+	b1 = polyeval(z,Dc[1])
+	b2 = polyeval(polydiff(z),Dc[1])
+
+	# Adds z to the list of z's 
+	zp.append(z.copy())
+
+	# Creates next initial guess
+	z = [b1-b2*Dc[1],b2]
+
+
+### Rational Chebyshev Subpatches
+N1 = 25
+it1 = 8
+
+# Initial guess first patch
+z1 = [0,(1+Dc[1])*(2*b1+(1+Dc[1])*b2),-(1+Dc[1])**2*((1+Dc[1])*b2+b1)]
+
+# Initial Conditions 
+b1 = b1
+b2 = -(1+Dc[1])**2*b2
+
+for j in range(rc):
+
+	Dc = [brk[rc-(j+1)],brk[rc-j]]
+	for i in range(it1):
+
+		# Our ODE's Coefficients
+		def g0(x):
+			return n*polyeval(z1,x)**(n-1)
+
+		def g1(x):
+			return 2*x**4/(x-1)
+
+		def g2(x):
+			return x**4
+
+		# What our ODE equals
+		def f(x):
+			return (n-1)*polyeval(z1,x)**n
+
+		g = [g0,g1,g2]
+		z2 = DESolver(g,f,D=Dc,XY=[[Dc[1]],[b1]],DXDY=[[Dc[1]],[b2]],basis="c",N=N1)
+		z1 = z2.copy()
+
+	# Adding converged solution to the list of solutions
+	zp1.append(z2.copy())
+
+	# Start Point/Initial Conditions on the next subpatch
+	b1 = polyeval(z2,Dc[0])
+	b2 = polyeval(polydiff(z2),Dc[0])
+	z1 = [0,(2*b1-b2*Dc[0])/Dc[0],(b2*Dc[0]-b1)/Dc[0]**2]
+print("Solution Found in: ", datetime.now()-start, " seconds.")
+
+### Error Calculations
+start=datetime.now()
+sc = 0
+ec = 0
+for i in range(c):
+	def err(x):
+		return abs(x*polyeval(polydiffn(zp[i],2),x)+2*polyeval(polydiff(zp[i]),x)+x*polyeval(zp[i],x)**M)
+
+	def er(x):
+		return abs(polyeval(zp[i],x)-1/sqrt(1+x**2/3))
+
+	ec += integrate(er,bl[i],bl[i+1])
+	sc += integrate(err,bl[i],bl[i+1])
+
+
+scr = 0
+ecr = 0
+for i in range(rc):
+	def err(x):
+		return abs((x-1)*x**3*polyeval(polydiffn(zp1[i],2),x)+2*x**3*polyeval(polydiff(zp1[i]),x)+(x-1)/x*polyeval(zp1[i],x)**M)*1/(x)**2
+
+	def er(x):
+		return abs(polyeval(zp1[i],1/(x+1))-1/sqrt(1+x**2/3))
+
+	scr += integrate(err,brk[rc-i-1],brk[rc-i])
+	ecr += integrate(er,bk[i],bk[i+1])
+
+s = sc+scr
+print("Exact Error Chebyshev Patch: ",ec)
+print("Exact Error Rational Chebyshev Patch: ", ecr)
+print("Residual Error Chebyshev Patch: ",sc)
+print("Residual Error Rational Chebshev Patch: ",scr)
+print("Residual Error on [0,b]: ",s)
+print("LMRE on [0,b]: ",-math.log(1/D[1]*s,10))
+
+
+print("Errors Found in: ", datetime.now()-start, " seconds.")
+### 
+start=datetime.now()
+
+points = 1000
+dx = (D[1]-D[0])/(points-1)
+xlist = [D[0]+i*dx for i in range(points)]
+plt.plot(xlist,[1/(sqrt(1+x**2/3)) for x in xlist],"-r",label=r"$y=\frac{1}{\sqrt{1+x^2/3}}$")
+
+for i in range(c):
+	points = 100
+	dx = (bl[i+1]-bl[i])/(points-1)
+	xlist = [bl[i]+j*dx for j in range(points)]
+	ylist = [polyeval(zp[i],x) for x in xlist]
+	plt.plot(xlist,ylist,"--g")
+
+for i in range(rc):
+	points = 200
+	dx = (bk[i+1]-bk[i])/(points-1)
+	xlist = [bk[i]+j*dx for j in range(points)]
+	ylist = [polyeval(zp1[i],1/(1+x)) for x in xlist]
+
+	if i == rc-1:
+		plt.plot(xlist,ylist,"--g",label=r"$y_{\text{approx}}$")
+	else:
+		plt.plot(xlist,ylist,"--g")
+
+plt.xlabel("x")
+plt.ylabel("y")
+plt.legend()
+ax = plt.gca()
+ax.set_ylim([0, 1.1])
+print("Plots made in: ", datetime.now()-start, " seconds.")
+plt.show()
+
+# No subpatches
+# 0.0000011881564626350364557069755435470320394883014383562412265040619789916616344
+
+# One subpatch
+#0.000000042738245741490508516285144614261495950253604532926555445916191295072676352
+#0.000000001426429460805981269891400127381535118349338497687161874042133028409571832
+
+# Two subpatches
+#0.0000000017319094532505773395064281491399126841697098755261238937792523895040781311
+#0.000000000025826711327289916960725891755054613650452393361063984764397686552166640883
+
+# Three subpatches
+#0.00000000089988357872545701902121357500813032574079385019181918856130208089080092638
+#0.000000000007304039747365931831311214401764260477449694423465058218173949099499316456
+
+# Four subpatches
+#0.00000000094081284350771784309995674235184249186611557823400323660053797978666425834
+#0.00000000000003560582143460486325838065327781200745929964094712024755688826273016987248
+
+# Five subpatches
+#0.0000000023067919128724593040134748589286210024619598086158832255185868363947393111
+#0.00000000000000014098722624560603386533828546955147446598013942694489761164160173243616229
+
+# Six subpatches
+#0.00000000286181186358926285936104965592925152594029221102397651029085114929734051
+#0.0000000000000000014080418105252134311812893472721949878196647359012991699835018800061978525
+
+# Seven subpatches
+#0.00000000031001069110481957225395038033447402643955442944521730932839359025362823236
+#0.00000000000000000025956785774418790602919672863788751255249339712079136032961985240810210897
+
+# Eight subpatches
+#0.0000000017807243545051290218149181676555362308488506043536729889545417430068116828
+#0.000000000000000000016187966231086692811644605799898596236294793204550386343253057590072606176
+
+# Nine subpatches
+#0.00000000043572087669548949026767006836241418970261493566343115334303929288265703565
+#0.00000000000000000000048136776541370690907913378819594609633634964742112307373854538739384893767
+
+# Ten subpatches
+#0.00000000060456353119224564729847896327247636598985981428521460797816643487754128122
+#0.00000000000000000000018947935263734754078201858930678327205000988935278606568501409747446801251
+
+# Twenty subpatches 
+#0.00000000017376254420369694118977499293421231818910553232296416233510524418329547929
+#0.000000000000000000000045366111823505106705401327375214707574230363145365889415962891658507260455
+
+
+### To make the error plots:
+"""
+from DESolver5 import *
+plt.xlabel("Number of sub-patches")
+plt.ylabel(r"$-\log_{10}(Exact\:\:error)$")
+plt.title(r"Exact error from patching $[0,10]$, Chebyshev vs equal width patching. (Lane Emden $n=5$)")
+ew = [0.0000011881564626350364557069755435470320394883014383562412265040619789916616344,0.000000042738245741490508516285144614261495950253604532926555445916191295072676352,0.0000000017319094532505773395064281491399126841697098755261238937792523895040781311,0.00000000089988357872545701902121357500813032574079385019181918856130208089080092638,0.00000000094081284350771784309995674235184249186611557823400323660053797978666425834,0.0000000023067919128724593040134748589286210024619598086158832255185868363947393111,0.00000000286181186358926285936104965592925152594029221102397651029085114929734051,0.00000000031001069110481957225395038033447402643955442944521730932839359025362823236,0.0000000017807243545051290218149181676555362308488506043536729889545417430068116828,0.00000000043572087669548949026767006836241418970261493566343115334303929288265703565,0.00000000060456353119224564729847896327247636598985981428521460797816643487754128122]
+cp = [0.0000011881564626350364557069755435470320394883014383562412265040619789916616344,0.000000001426429460805981269891400127381535118349338497687161874042133028409571832,0.000000000025826711327289916960725891755054613650452393361063984764397686552166640883,0.000000000007304039747365931831311214401764260477449694423465058218173949099499316456,0.00000000000003560582143460486325838065327781200745929964094712024755688826273016987248,0.00000000000000014098722624560603386533828546955147446598013942694489761164160173243616229,0.0000000000000000014080418105252134311812893472721949878196647359012991699835018800061978525,0.00000000000000000025956785774418790602919672863788751255249339712079136032961985240810210897,0.000000000000000000016187966231086692811644605799898596236294793204550386343253057590072606176,0.00000000000000000000048136776541370690907913378819594609633634964742112307373854538739384893767,0.00000000000000000000018947935263734754078201858930678327205000988935278606568501409747446801251]
+
+ew1 =[]
+cp1 =[]
+xlist = []
+for i in range(11):
+	ew1.append(-math.log(ew[i],10))
+	cp1.append(-math.log(cp[i],10))
+	xlist.append(i)
+
+plt.plot(xlist,ew1,"or",alpha=0.5,label="Equal width patching")
+plt.plot(xlist,cp1,"og",alpha=0.5,label="Chebyshev patching")
+plt.legend()
+plt.show()
+"""
